@@ -1,4 +1,4 @@
-const { withDangerousMod, withMainApplication } = require('@expo/config-plugins');
+const { withDangerousMod, withMainActivity, withMainApplication } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -42,6 +42,40 @@ module.exports = function withNativeWidgetHost(config) {
       );
       config.modResults.contents = contents;
     }
+
+    return config;
+  });
+
+  // 3. Tie AppWidgetHost updates to the generated MainActivity lifecycle.
+  config = withMainActivity(config, (config) => {
+    let contents = config.modResults.contents;
+
+    if (!contents.includes('import com.tvlauncher.widgethost.AppWidgetHostManager')) {
+      contents = contents.replace(
+        'import android.os.Bundle',
+        'import android.os.Bundle\nimport com.tvlauncher.widgethost.AppWidgetHostManager'
+      );
+    }
+
+    if (!contents.includes('AppWidgetHostManager.startListening(this)')) {
+      const lifecycleMethods = `
+  override fun onResume() {
+    super.onResume()
+    AppWidgetHostManager.startListening(this)
+  }
+
+  override fun onPause() {
+    AppWidgetHostManager.stopListening()
+    super.onPause()
+  }
+`;
+      contents = contents.replace(
+        '\n  /**\n   * Returns the name of the main component registered from JavaScript.',
+        `${lifecycleMethods}\n  /**\n   * Returns the name of the main component registered from JavaScript.`
+      );
+    }
+
+    config.modResults.contents = contents;
     return config;
   });
 

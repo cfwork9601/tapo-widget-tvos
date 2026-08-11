@@ -82,33 +82,23 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
       val host = AppWidgetHostManager.getHost(context)
       val providerComponent = ComponentName(pkg, cls)
 
-      var targetId = if (appWidgetId > 0) appWidgetId else currentBoundId
+      val targetId = appWidgetId
       var info: AppWidgetProviderInfo? = null
 
-      if (targetId > 0) {
-        info = appWidgetManager.getAppWidgetInfo(targetId)
-        if (info == null) {
-          val bound = appWidgetManager.bindAppWidgetIdIfAllowed(targetId, providerComponent)
-          if (bound) {
-            info = appWidgetManager.getAppWidgetInfo(targetId)
-          }
-        }
+      if (targetId <= 0) {
+        showFallbackView("Widget ID unavailable\n($pkg)")
+        return
       }
 
+      info = appWidgetManager.getAppWidgetInfo(targetId)
       if (info == null) {
-        val newId = host.allocateAppWidgetId()
-        if (newId > 0) {
-          val bound = appWidgetManager.bindAppWidgetIdIfAllowed(newId, providerComponent)
-          if (bound) {
-            targetId = newId
-            info = appWidgetManager.getAppWidgetInfo(newId)
-          } else {
-            host.deleteAppWidgetId(newId)
-          }
+        val bound = appWidgetManager.bindAppWidgetIdIfAllowed(targetId, providerComponent)
+        if (bound) {
+          info = appWidgetManager.getAppWidgetInfo(targetId)
         }
       }
 
-      if (info != null && targetId > 0) {
+      if (info != null) {
         // Use pure application context with DeviceDefault theme to prevent AppCompatViewInflater
         // from substituting RemoteViews ImageViews with AppCompatImageView (which breaks RemoteViews reflection)
         val pureContext = ContextThemeWrapper(context.applicationContext, android.R.style.Theme_DeviceDefault)

@@ -2,6 +2,7 @@ package com.tvlauncher
 
 import android.os.Build
 import android.os.Bundle
+import com.tvlauncher.widgethost.AppWidgetHostManager
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -17,6 +18,16 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+  }
+
+  override fun onResume() {
+    super.onResume()
+    AppWidgetHostManager.startListening(this)
+  }
+
+  override fun onPause() {
+    AppWidgetHostManager.stopListening()
+    super.onPause()
   }
 
   /**

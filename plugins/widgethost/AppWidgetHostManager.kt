@@ -13,7 +13,12 @@ object AppWidgetHostManager {
     if (appWidgetHost == null) {
       appWidgetHost = AppWidgetHost(context.applicationContext, HOST_ID)
     }
-    val host = appWidgetHost!!
+    return appWidgetHost!!
+  }
+
+  @Synchronized
+  fun startListening(context: Context) {
+    val host = getHost(context)
     if (!isListening) {
       try {
         host.startListening()
@@ -22,7 +27,6 @@ object AppWidgetHostManager {
         e.printStackTrace()
       }
     }
-    return host
   }
 
   @Synchronized

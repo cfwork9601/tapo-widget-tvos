@@ -128,6 +128,7 @@ export default function HomeScreen() {
   const [selectedWidget, setSelectedWidget] = useState<ActiveWidget | null>(null);
   const [isActionSettingsOpen, setIsActionSettingsOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<ActiveWidget[]>([]);
+  const [widgetOperationError, setWidgetOperationError] = useState<string | null>(null);
 
   // Dynamic layout calculations based on tilesPerRow setting
   const containerPadding = 40; // 20px padding left + 20px right
@@ -156,8 +157,15 @@ export default function HomeScreen() {
                   updated = true;
                 }
                 if (!item.appWidgetId || item.appWidgetId <= 0) {
-                  item.appWidgetId = await allocateAppWidgetId();
-                  updated = true;
+                  const allocatedId = await allocateAppWidgetId();
+                  if (allocatedId > 0) {
+                    item.appWidgetId = allocatedId;
+                    updated = true;
+                  } else {
+                    delete item.appWidgetId;
+                    updated = true;
+                    setWidgetOperationError('A saved widget could not be restored because Android did not provide a widget ID.');
+                  }
                 }
               }
               loadedWidgets = capped;
@@ -227,31 +235,32 @@ export default function HomeScreen() {
     setIsActionSettingsOpen(false);
   };
 
-  const addCameraWidget = async () => {
-    const count = activeWidgets.filter((w) => w.className === TAPO_CAMERA.className).length + 1;
+  const addWidget = async (
+    provider: { packageName: string; className: string; label: string },
+    instancePrefix: string,
+    labelPrefix: string
+  ) => {
+    setWidgetOperationError(null);
+    const count = activeWidgets.filter((w) => w.className === provider.className).length + 1;
     const allocatedId = await allocateAppWidgetId();
+    if (allocatedId <= 0) {
+      setWidgetOperationError(`Unable to add ${provider.label}: Android did not provide a widget ID.`);
+      return;
+    }
+
     const newWidget: ActiveWidget = {
-      instanceId: `tapo-camera-${Date.now()}`,
+      instanceId: `${instancePrefix}-${Date.now()}`,
       appWidgetId: allocatedId,
-      packageName: TAPO_CAMERA.packageName,
-      className: TAPO_CAMERA.className,
-      label: `Tapo Camera #${count}`,
+      packageName: provider.packageName,
+      className: provider.className,
+      label: `${labelPrefix} #${count}`,
     };
     persistWidgets([...activeWidgets, newWidget]);
   };
 
-  const addPlugWidget = async () => {
-    const count = activeWidgets.filter((w) => w.className === TAPO_PLUG.className).length + 1;
-    const allocatedId = await allocateAppWidgetId();
-    const newWidget: ActiveWidget = {
-      instanceId: `tapo-plug-${Date.now()}`,
-      appWidgetId: allocatedId,
-      packageName: TAPO_PLUG.packageName,
-      className: TAPO_PLUG.className,
-      label: `Tapo Plug #${count}`,
-    };
-    persistWidgets([...activeWidgets, newWidget]);
-  };
+  const addCameraWidget = () => addWidget(TAPO_CAMERA, 'tapo-camera', 'Tapo Camera');
+
+  const addPlugWidget = () => addWidget(TAPO_PLUG, 'tapo-plug', 'Tapo Plug');
 
   const removeWidget = (instanceId: string) => {
     const target = activeWidgets.find((w) => w.instanceId === instanceId);
@@ -279,6 +288,7 @@ export default function HomeScreen() {
                 ? 'Enumerating Installed Providers...'
                 : `Device Providers: ${providers.length} total (${tapoProvidersCount} TP-Link)`}
             </Text>
+            {widgetOperationError ? <Text style={styles.operationError}>{widgetOperationError}</Text> : null}
           </View>
 
           <View style={styles.settingsToolbar}>
@@ -525,6 +535,12 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 13,
     marginTop: 2,
+  },
+  operationError: {
+    color: '#fca5a5',
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
   },
   settingsToolbar: {
     flexDirection: 'row',
