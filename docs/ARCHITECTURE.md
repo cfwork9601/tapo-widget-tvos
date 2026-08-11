@@ -93,7 +93,7 @@ Extends React Native's `SimpleViewManager<AppWidgetViewContainer>`:
   1. Requests provider info from `AppWidgetManager`.
   2. Binds widget ID silently using pre-granted `grantbind` permissions.
   3. Inflates `AppWidgetHostView` into container frame.
-- **View Cleanup**: Overrides `onDropViewInstance` to automatically call `deleteAppWidgetId()` when React Native unmounts a card.
+- **View Cleanup**: Widget IDs are deliberately retained through ordinary React Native unmounts so persisted cards can remount with the same ID. The dashboard explicitly calls `deleteAppWidgetId()` when a user removes a widget.
 
 ### 3.3 AppWidgetModule (`AppWidgetModule.kt`)
 Native module extending `ReactContextBaseJavaModule`:

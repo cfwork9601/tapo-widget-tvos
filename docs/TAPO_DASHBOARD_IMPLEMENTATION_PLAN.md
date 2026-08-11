@@ -34,6 +34,8 @@ Update the [Development Log](./DEVELOPMENT_LOG.md) whenever a phase advances, a 
 
 **Goal:** Ensure live widgets update only while appropriate and widget IDs have one clear owner.
 
+**Status:** Core lifecycle and allocation hardening completed in `6279757`; explicit bind-result reporting remains follow-up work.
+
 ### Work
 
 1. Add `AppWidgetHostManager.startListening()` and `stopListening()` entry points if needed.

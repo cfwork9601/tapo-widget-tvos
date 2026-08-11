@@ -87,11 +87,11 @@ An in-card press increments `clickToken`. The native view manager then sends a s
 
 **Impact:** It may fail when Tapo changes its widget layout, when card dimensions differ, or for every non-Tapo provider. The documentation's earlier description of view-tree introspection is not reflected in the current code.
 
-### 4. Widget listening is not tied to activity lifecycle
+### 4. Widget listening is tied to activity lifecycle (resolved)
 
-The host manager starts listening when a host is requested. `MainActivity` does not call lifecycle methods to stop listening while it is paused or backgrounded.
+The original inspection found that the host manager started listening lazily and `MainActivity` did not stop it while paused. Commit `6279757` resolves this: `MainActivity.onResume()` starts listening, `onPause()` stops it, and the Expo config plugin reapplies that wiring after prebuild.
 
-**Impact:** Widget updates may continue unnecessarily in the background. This also conflicts with the lifecycle behavior described in `docs/ARCHITECTURE.md`.
+**Impact:** Widget updates now follow the launcher activity lifecycle. This part of the architecture documentation is aligned with the shipped implementation.
 
 ### 5. Binding and allocation failures have no user-visible recovery path
 
@@ -115,10 +115,9 @@ The architecture documentation states that widget updates are started in `onResu
 
 1. Add a Tapo-only provider picker based on `getInstalledProviders()`, filtering for `com.tplink.iot` and exposing every installed Tapo widget provider.
 2. Implement reliable, per-widget Tapo actions rather than a fixed coordinate click; use an explicit adapter where a Tapo widget family needs specialized behavior.
-3. Start and stop `AppWidgetHost` listening in `MainActivity.onResume()` and `onPause()`.
-4. Make widget ID ownership explicit: report allocations back to JavaScript, clean up abandoned IDs, and handle allocation/bind failure visibly.
-5. Update the architecture and Tapo feature documents to match the behavior that is actually shipped.
-6. Add automated native build verification and a small UI/integration test suite for widget persistence, binding, removal, and focus navigation.
+3. Make widget ID ownership fully explicit: report bind outcomes to JavaScript, clean up abandoned IDs, and handle allocation/bind failure visibly.
+4. Update the architecture and Tapo feature documents to match the behavior that is actually shipped.
+5. Add automated native build verification and a small UI/integration test suite for widget persistence, binding, removal, and focus navigation.
 
 ## Continuity
 

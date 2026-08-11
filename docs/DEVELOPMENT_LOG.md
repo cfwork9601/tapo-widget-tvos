@@ -5,8 +5,8 @@
 
 ## Resume Here
 
-**Current implementation phase:** Phase 0 — provider registry enumeration complete; per-provider mount/render verification pending.
-**Next required action:** Add and test each remaining provider in [TAPO_PROVIDER_INVENTORY.md](./TAPO_PROVIDER_INVENTORY.md), recording its configuration, binding, rendering, and cleanup result.
+**Current implementation phase:** Phase 1 complete; Phase 2 — build the Tapo provider picker — is next.
+**Next required action:** Replace the hard-coded Camera/Plug add flow with a D-pad-friendly picker that filters `getInstalledProviders()` to `com.tplink.iot`. Use it to resume the remaining mount/render tests in [TAPO_PROVIDER_INVENTORY.md](./TAPO_PROVIDER_INVENTORY.md).
 
 Do not start provider-specific action work until that inventory exists. The implementation plan is [TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md).
 
@@ -20,8 +20,8 @@ Do not start provider-specific action work until that inventory exists. The impl
 | Tapo widget creation | Partial | UI explicitly adds Camera and Smart Plug only; a full Tapo provider picker is pending. |
 | Per-widget click actions | Implemented foundation | Each card persists **Use widget primary action**, **Open Tapo app**, or **No action**. |
 | Tapo action catalog | Pending device research | Android cannot automatically enumerate proprietary widget actions. |
-| Host lifecycle | Pending | Listener start/stop is not yet tied to `MainActivity.onResume()` / `onPause()`. |
-| Widget-ID ownership | Needs hardening | Failed allocation/bind and native fallback ID behavior need a single, explicit lifecycle. |
+| Host lifecycle | Implemented | `MainActivity.onResume()` starts widget listening and `onPause()` stops it; the Expo plugin reproduces this after prebuild. |
+| Widget-ID ownership | Partially hardened | Native views no longer allocate hidden fallback IDs, and the UI does not persist a failed allocation. Explicit bind-result reporting remains pending. |
 | Automated checks | Partial | `npx tsc --noEmit` passes; repeatable native build/CI coverage is pending. |
 
 ## Completed Work
@@ -33,6 +33,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | `3959aa8` | Aligned the inspection recommendations with the Tapo-only scope. |
 | `2db30ca` | Added persistent per-widget click-action settings and action-catalog documentation. |
 | `e0a9bb7` | Added the phased Tapo dashboard implementation plan. |
+| `6279757` | Tied widget listening to activity lifecycle, removed hidden native ID allocation, and added allocation-failure feedback. |
 | Phase 0 working tree | Enumerated 13 Tapo providers on the Onn 4K Pro and added the initial provider inventory. |
 
 ## Important Decisions
@@ -49,7 +50,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | Date | Check | Result | Notes |
 | --- | --- | --- | --- |
 | 2026-08-11 | TypeScript | Pass | `npx tsc --noEmit` completed successfully after the click-action feature. |
-| 2026-08-11 | Kotlin compile attempt | Inconclusive | Gradle daemon started, but this environment did not yield a conclusive task completion result. Validate through CI or a real device build. |
+| 2026-08-11 | Kotlin compile after lifecycle changes | Pass | `./gradlew :app:compileDebugKotlin --console=plain --quiet` completed successfully after Expo prebuild. |
 | 2026-08-11 | Android TV provider registry | Pass | Onn 4K Pro / Android 14 / Tapo 3.20.154 reports 13 Tapo widget providers; two camera widgets are bound to TV Launcher. See `TAPO_PROVIDER_INVENTORY.md`. |
 | — | Per-provider mount/render test | Not started | Required to complete Phase 0. |
 
