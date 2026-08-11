@@ -14,15 +14,15 @@ Do not start provider-specific action work until that inventory exists. The impl
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Android TV HOME launcher | Implemented | Manifest/plugin declares `HOME`, `DEFAULT`, and `LEANBACK_LAUNCHER`. |
-| Native AppWidget host | Implemented prototype | Kotlin bridge hosts Android `AppWidget` views in React Native. |
+| Android TV HOME launcher | Implemented | Package `com.widgetlauncher`. Manifest/plugin declares `HOME`, `DEFAULT`, and `LEANBACK_LAUNCHER`. |
+| Native AppWidget host | Implemented prototype | Kotlin bridge hosts Android `AppWidget` views in React Native under `com.widgetlauncher.widgethost`. |
 | Tapo provider inventory | In progress | 13 providers enumerated on target device; per-provider mount/render testing in progress via picker. |
 | Tapo widget creation | Implemented | Dynamic TV D-pad provider picker filters `getInstalledProviders()` to `com.tplink.iot`. |
 | Per-widget click actions | Implemented foundation | Each card persists **Use widget primary action**, **Open Tapo app**, or **No action**. |
 | Tapo action catalog | Pending device research | Android cannot automatically enumerate proprietary widget actions. |
 | Host lifecycle | Implemented | `MainActivity.onResume()` starts widget listening and `onPause()` stops it; the Expo plugin reproduces this after prebuild. |
 | Widget-ID ownership | Partially hardened | Native views no longer allocate hidden fallback IDs, and the UI does not persist a failed allocation. Explicit bind-result reporting remains pending. |
-| Automated checks | Partial | `npx tsc --noEmit` passes; repeatable native build/CI coverage is pending. |
+| Automated checks | Partial | `npx tsc --noEmit` & Kotlin compile pass; repeatable native build/CI coverage is pending. |
 
 ## Completed Work
 
@@ -37,6 +37,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | `9c6bfdd` | Documented host lifecycle and widget ID ownership hardening. |
 | `56f8e3d` | Built `TapoProviderPickerModal` with D-pad navigation, filtering `com.tplink.iot` providers and allocating widget IDs upon selection. |
 | `cf1a03b` | Updated development log with Phase 2 completion state and commit reference. |
+| `3b2cb2a` | Renamed app to Tapo Widget Hub (`tapo-widget-hub`) and package to `com.widgetlauncher` across Expo config, native Kotlin sources, scripts, and prebuild. |
 
 ## Important Decisions
 
@@ -54,6 +55,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | 2026-08-11 | TypeScript | Pass | `npx tsc --noEmit` completed successfully after adding `TapoProviderPickerModal`. |
 | 2026-08-11 | Kotlin compile after lifecycle changes | Pass | `./gradlew :app:compileDebugKotlin --console=plain --quiet` completed successfully after Expo prebuild. |
 | 2026-08-11 | Android TV provider registry | Pass | Onn 4K Pro / Android 14 / Tapo 3.20.154 reports 13 Tapo widget providers; two camera widgets are bound to TV Launcher. See `TAPO_PROVIDER_INVENTORY.md`. |
+| 2026-08-11 | Package rename & Kotlin build | Pass | `npx expo prebuild --clean`, `./gradlew :app:compileDebugKotlin`, and `npx tsc --noEmit` passed with 0 errors for `com.widgetlauncher`. |
 | — | Per-provider mount/render test | Not started | Ready to resume using the newly added Tapo provider picker. |
 
 ## Update Rules
