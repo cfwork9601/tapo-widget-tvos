@@ -2,13 +2,15 @@
 
 **Branch:** `feature/widget-launcher-hardening`  
 **Scope:** Build a stable Android TV home dashboard that supports all Tapo app-widget providers installed from `com.tplink.iot`.  
-**Reference documents:** [Branch Charter](./BRANCH_CHARTER.md), [Application Inspection](./APP_INSPECTION.md), and [Tapo Widget Click Actions](./TAPO_WIDGET_ACTIONS.md).
+**Reference documents:** [Branch Charter](./BRANCH_CHARTER.md), [Application Inspection](./APP_INSPECTION.md), [Tapo Widget Click Actions](./TAPO_WIDGET_ACTIONS.md), and the current [Development Log](./DEVELOPMENT_LOG.md).
 
 ## Definition of Done
 
 The branch is complete when the launcher can discover, add, configure, render, persist, and safely remove every Tapo widget provider installed on the target Android TV device. Every card must remain usable with a D-pad, have a clear click-action setting, and present actionable recovery feedback when it cannot bind or render.
 
 “All Tapo widgets” means every installed Android app-widget provider declared by the Tapo package. It does not mean the launcher can automatically discover every proprietary control inside each widget; those actions must be verified and added explicitly.
+
+Update the [Development Log](./DEVELOPMENT_LOG.md) whenever a phase advances, a provider is tested, or a meaningful blocker is found.
 
 ## Phase 0 — Establish the Device Provider Inventory
 
@@ -156,4 +158,3 @@ Before merging, verify on a real target TV:
 4. Switch grid/slider layouts, leave and return to the launcher, then reboot.
 5. Remove every test card and confirm no stale card or unexpected widget state remains.
 6. Capture relevant logs and update the inventory/test matrix.
-

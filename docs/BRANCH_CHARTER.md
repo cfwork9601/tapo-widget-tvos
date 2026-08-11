@@ -10,6 +10,8 @@ The application already functions as an Android TV HOME launcher and can embed r
 
 The detailed baseline inspection is in [APP_INSPECTION.md](./APP_INSPECTION.md).
 
+Track current progress and the next resume point in [DEVELOPMENT_LOG.md](./DEVELOPMENT_LOG.md).
+
 ## Branch Goals
 
 Work on this branch should prioritize the following outcomes:

@@ -96,6 +96,8 @@ cd android && ./gradlew assembleDebug && cd ..
 - 📹 **[`docs/TAPO_CAMERA_LIVE_VIEW_FEATURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/TAPO_CAMERA_LIVE_VIEW_FEATURE.md)**: Technical breakdown of Tapo camera live stream dispatching.
 - 📝 **[`docs/agent.md`](file:///home/thanhtuan/projects/tvlnc/docs/agent.md)**: AI agent instructions & mandatory hard constraints.
 - 📋 **[`docs/implementation.md`](file:///home/thanhtuan/projects/tvlnc/docs/implementation.md)**: Historical sprint breakdown and roadmap.
+- 🧭 **[`docs/TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md`](file:///home/thanhtuan/projects/tvlnc/docs/TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md)**: Current phased plan for full installed-Tapo-widget coverage.
+- 📍 **[`docs/DEVELOPMENT_LOG.md`](file:///home/thanhtuan/projects/tvlnc/docs/DEVELOPMENT_LOG.md)**: Current branch status, validation evidence, and the next resume point for future sessions.
 
 ---
 

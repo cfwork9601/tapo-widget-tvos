@@ -119,3 +119,7 @@ The architecture documentation states that widget updates are started in `onResu
 4. Make widget ID ownership explicit: report allocations back to JavaScript, clean up abandoned IDs, and handle allocation/bind failure visibly.
 5. Update the architecture and Tapo feature documents to match the behavior that is actually shipped.
 6. Add automated native build verification and a small UI/integration test suite for widget persistence, binding, removal, and focus navigation.
+
+## Continuity
+
+This report is the static baseline. Current implementation progress, validation evidence, decisions, and the next resume point are maintained in [DEVELOPMENT_LOG.md](./DEVELOPMENT_LOG.md).
