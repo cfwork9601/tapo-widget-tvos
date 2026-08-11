@@ -5,8 +5,8 @@
 
 ## Resume Here
 
-**Current implementation phase:** Phase 1 complete; Phase 2 — build the Tapo provider picker — is next.
-**Next required action:** Replace the hard-coded Camera/Plug add flow with a D-pad-friendly picker that filters `getInstalledProviders()` to `com.tplink.iot`. Use it to resume the remaining mount/render tests in [TAPO_PROVIDER_INVENTORY.md](./TAPO_PROVIDER_INVENTORY.md).
+**Current implementation phase:** Phase 2 complete; Phase 3 — improve card rendering, states, and dashboard management — is next.
+**Next required action:** Use the new Tapo provider picker to test mounting/rendering each of the 13 cataloged providers in [TAPO_PROVIDER_INVENTORY.md](./TAPO_PROVIDER_INVENTORY.md) and implement Phase 3 error/recovery card states.
 
 Do not start provider-specific action work until that inventory exists. The implementation plan is [TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md).
 
@@ -16,8 +16,8 @@ Do not start provider-specific action work until that inventory exists. The impl
 | --- | --- | --- |
 | Android TV HOME launcher | Implemented | Manifest/plugin declares `HOME`, `DEFAULT`, and `LEANBACK_LAUNCHER`. |
 | Native AppWidget host | Implemented prototype | Kotlin bridge hosts Android `AppWidget` views in React Native. |
-| Tapo provider inventory | In progress | 13 providers enumerated on the target Onn 4K Pro; all except existing camera bindings still need mount/render verification. |
-| Tapo widget creation | Partial | UI explicitly adds Camera and Smart Plug only; a full Tapo provider picker is pending. |
+| Tapo provider inventory | In progress | 13 providers enumerated on target device; per-provider mount/render testing in progress via picker. |
+| Tapo widget creation | Implemented | Dynamic TV D-pad provider picker filters `getInstalledProviders()` to `com.tplink.iot`. |
 | Per-widget click actions | Implemented foundation | Each card persists **Use widget primary action**, **Open Tapo app**, or **No action**. |
 | Tapo action catalog | Pending device research | Android cannot automatically enumerate proprietary widget actions. |
 | Host lifecycle | Implemented | `MainActivity.onResume()` starts widget listening and `onPause()` stops it; the Expo plugin reproduces this after prebuild. |
@@ -34,7 +34,8 @@ Do not start provider-specific action work until that inventory exists. The impl
 | `2db30ca` | Added persistent per-widget click-action settings and action-catalog documentation. |
 | `e0a9bb7` | Added the phased Tapo dashboard implementation plan. |
 | `6279757` | Tied widget listening to activity lifecycle, removed hidden native ID allocation, and added allocation-failure feedback. |
-| Phase 0 working tree | Enumerated 13 Tapo providers on the Onn 4K Pro and added the initial provider inventory. |
+| `9c6bfdd` | Documented host lifecycle and widget ID ownership hardening. |
+| Phase 2 working tree | Built `TapoProviderPickerModal` with D-pad navigation, filtering `com.tplink.iot` providers and allocating widget IDs upon selection. |
 
 ## Important Decisions
 
@@ -49,10 +50,10 @@ Do not start provider-specific action work until that inventory exists. The impl
 
 | Date | Check | Result | Notes |
 | --- | --- | --- | --- |
-| 2026-08-11 | TypeScript | Pass | `npx tsc --noEmit` completed successfully after the click-action feature. |
+| 2026-08-11 | TypeScript | Pass | `npx tsc --noEmit` completed successfully after adding `TapoProviderPickerModal`. |
 | 2026-08-11 | Kotlin compile after lifecycle changes | Pass | `./gradlew :app:compileDebugKotlin --console=plain --quiet` completed successfully after Expo prebuild. |
 | 2026-08-11 | Android TV provider registry | Pass | Onn 4K Pro / Android 14 / Tapo 3.20.154 reports 13 Tapo widget providers; two camera widgets are bound to TV Launcher. See `TAPO_PROVIDER_INVENTORY.md`. |
-| — | Per-provider mount/render test | Not started | Required to complete Phase 0. |
+| — | Per-provider mount/render test | Not started | Ready to resume using the newly added Tapo provider picker. |
 
 ## Update Rules
 

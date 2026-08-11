@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import WidgetCard from '../components/WidgetCard';
+import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
 import {
   getInstalledProviders,
   launchApp,
@@ -127,6 +128,7 @@ export default function HomeScreen() {
   const [tilesPerRow, setTilesPerRow] = useState<number>(2);
   const [selectedWidget, setSelectedWidget] = useState<ActiveWidget | null>(null);
   const [isActionSettingsOpen, setIsActionSettingsOpen] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<ActiveWidget[]>([]);
   const [widgetOperationError, setWidgetOperationError] = useState<string | null>(null);
 
@@ -236,15 +238,16 @@ export default function HomeScreen() {
   };
 
   const addWidget = async (
-    provider: { packageName: string; className: string; label: string },
+    provider: { packageName: string; className: string; label?: string },
     instancePrefix: string,
     labelPrefix: string
   ) => {
     setWidgetOperationError(null);
+    const displayLabel = provider.label || labelPrefix;
     const count = activeWidgets.filter((w) => w.className === provider.className).length + 1;
     const allocatedId = await allocateAppWidgetId();
     if (allocatedId <= 0) {
-      setWidgetOperationError(`Unable to add ${provider.label}: Android did not provide a widget ID.`);
+      setWidgetOperationError(`Unable to add ${displayLabel}: Android did not provide a widget ID.`);
       return;
     }
 
@@ -253,14 +256,17 @@ export default function HomeScreen() {
       appWidgetId: allocatedId,
       packageName: provider.packageName,
       className: provider.className,
-      label: `${labelPrefix} #${count}`,
+      label: `${displayLabel} #${count}`,
     };
     persistWidgets([...activeWidgets, newWidget]);
   };
 
-  const addCameraWidget = () => addWidget(TAPO_CAMERA, 'tapo-camera', 'Tapo Camera');
-
-  const addPlugWidget = () => addWidget(TAPO_PLUG, 'tapo-plug', 'Tapo Plug');
+  const handleSelectProvider = (provider: WidgetProviderInfo) => {
+    const shortClassName = provider.className.split('.').pop() || 'Widget';
+    const instancePrefix = `tapo-${shortClassName.toLowerCase()}`;
+    const displayLabel = provider.label || shortClassName;
+    addWidget(provider, instancePrefix, displayLabel);
+  };
 
   const removeWidget = (instanceId: string) => {
     const target = activeWidgets.find((w) => w.instanceId === instanceId);
@@ -295,15 +301,10 @@ export default function HomeScreen() {
             {/* Widget Action Buttons */}
             <View style={styles.toolbarSection}>
               <ControlButton
-                label="+ Add Camera"
+                label="+ Add Tapo Widget"
                 variant="primary"
                 hasTVPreferredFocus={true}
-                onPress={addCameraWidget}
-              />
-              <ControlButton
-                label="+ Add Plug"
-                variant="secondary"
-                onPress={addPlugWidget}
+                onPress={() => setIsPickerOpen(true)}
               />
             </View>
 
@@ -355,7 +356,7 @@ export default function HomeScreen() {
           ) : activeWidgets.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No active widgets on dashboard.</Text>
-              <Text style={styles.emptySubtext}>Use "+ Add Camera" above to place a widget card.</Text>
+              <Text style={styles.emptySubtext}>Use "+ Add Tapo Widget" above to place a widget card.</Text>
             </View>
           ) : layoutMode === 'grid' ? (
             /* Grid View Row */
@@ -490,6 +491,13 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      <TapoProviderPickerModal
+        visible={isPickerOpen}
+        providers={providers}
+        onSelectProvider={handleSelectProvider}
+        onClose={() => setIsPickerOpen(false)}
+      />
     </View>
   );
 }
