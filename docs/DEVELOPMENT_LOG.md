@@ -36,6 +36,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | `6279757` | Tied widget listening to activity lifecycle, removed hidden native ID allocation, and added allocation-failure feedback. |
 | `9c6bfdd` | Documented host lifecycle and widget ID ownership hardening. |
 | `56f8e3d` | Built `TapoProviderPickerModal` with D-pad navigation, filtering `com.tplink.iot` providers and allocating widget IDs upon selection. |
+| `cf1a03b` | Updated development log with Phase 2 completion state and commit reference. |
 
 ## Important Decisions
 
