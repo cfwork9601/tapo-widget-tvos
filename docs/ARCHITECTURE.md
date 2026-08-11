@@ -10,24 +10,24 @@ This document outlines the software architecture, native module bridge design, v
 
 ```mermaid
 graph TD
-    subgraph React Native Layer (TypeScript / JS)
-        HomeScreen["HomeScreen.tsx<br/>(TV D-Pad Grid & Remote Focus)"]
-        WidgetCard["WidgetCard.tsx<br/>(Generic Container Card)"]
-        ProviderService["WidgetProviderService.ts<br/>(Native Module JS Bridge)"]
+    subgraph "React Native Layer (TypeScript / JS)"
+        HomeScreen["HomeScreen.tsx - TV D-Pad Grid & Remote Focus"]
+        WidgetCard["WidgetCard.tsx - Generic Container Card"]
+        ProviderService["WidgetProviderService.ts - Native Module JS Bridge"]
     end
 
-    subgraph Native Bridge Layer (Kotlin)
-        ViewManager["AppWidgetViewManager.kt<br/>(Exposes 'AppWidgetView' to RN)"]
-        HostManager["AppWidgetHostManager.kt<br/>(AppWidget ID Lifecycle & Listener)"]
-        AppWidgetModule["AppWidgetModule.kt<br/>(getInstalledProviders Native Module)"]
+    subgraph "Native Bridge Layer (Kotlin)"
+        ViewManager["AppWidgetViewManager.kt - Exposes AppWidgetView to RN"]
+        HostManager["AppWidgetHostManager.kt - AppWidget ID Lifecycle & Listener"]
+        AppWidgetModule["AppWidgetModule.kt - getInstalledProviders Native Module"]
     end
 
-    subgraph Android OS Framework
+    subgraph "Android OS Framework"
         AppWidgetHost["android.appwidget.AppWidgetHost"]
         AppWidgetManager["android.appwidget.AppWidgetManager"]
     end
 
-    subgraph External Provider Apps
+    subgraph "External Provider Apps"
         TapoApp["TP-Link Tapo (com.tplink.iot)"]
         OtherApps["tinyCam / Grok / Voice Recorder"]
     end
@@ -118,7 +118,7 @@ sequenceDiagram
     Manager->>OS: AppWidgetHost.startListening()
 
     Note over RN, OS: Widget Component Mounting
-    RN->>Manager: Render <NativeAppWidgetView packageName="..." className="..."/>
+    RN->>Manager: Render NativeAppWidgetView (packageName, className)
     Manager->>OS: allocateAppWidgetId()
     OS-->>Manager: Return appWidgetId (e.g. 24)
     Manager->>OS: bindAppWidgetIdIfAllowed(appWidgetId, provider)
@@ -199,10 +199,10 @@ flowchart TD
     B -->|"Read Config"| C["app.json (plugins array)"]
     C -->|"Execute Plugin"| D["plugins/withLauncherManifest.js"]
     
-    subgraph Plugin Manipulations
-        D -->|"1. Inject Uses-Permissions"| E["android.permission.QUERY_ALL_PACKAGES<br/>android.permission.BIND_APPWIDGET"]
+    subgraph "Plugin Manipulations"
+        D -->|"1. Inject Uses-Permissions"| E["QUERY_ALL_PACKAGES and BIND_APPWIDGET"]
         D -->|"2. Inject Uses-Feature"| F["android.software.leanback (required=false)"]
-        D -->|"3. Inject MainActivity Intent Filters"| G["android.intent.category.HOME<br/>android.intent.category.DEFAULT<br/>android.intent.category.LEANBACK_LAUNCHER"]
+        D -->|"3. Inject MainActivity Intent Filters"| G["HOME, DEFAULT, LEANBACK_LAUNCHER"]
     end
     
     E --> H["Generated android/app/src/main/AndroidManifest.xml"]
@@ -210,4 +210,3 @@ flowchart TD
     G --> H
     H -->|"Gradle Compilation"| I["app-debug.apk / app-release.apk"]
 ```
-

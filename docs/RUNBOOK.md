@@ -52,19 +52,19 @@ sequenceDiagram
     ADB->>TV: Handshake & verify RSA authorization
     TV-->>ADB: Connected & Authorized
 
-    Script->>ADB: [1/5] adb shell wm density 309
+    Script->>ADB: Step 1/5: adb shell wm density 309
     ADB->>TV: Override display density scale
 
-    Script->>ADB: [2/5] adb push app-debug.apk /data/local/tmp/
+    Script->>ADB: Step 2/5: adb push app-debug.apk /data/local/tmp/
     ADB->>TV: Transfer APK binary payload
 
-    Script->>ADB: [3/5] adb shell pm install -r /data/local/tmp/tapo-widget.apk
+    Script->>ADB: Step 3/5: adb shell pm install -r /data/local/tmp/tapo-widget.apk
     ADB->>TV: Silent package installation
 
-    Script->>ADB: [4/5] adb shell appwidget grantbind --package com.tvlauncher --user 0
+    Script->>ADB: Step 4/5: adb shell appwidget grantbind --package com.tvlauncher --user 0
     ADB->>TV: Grant silent widget host binding permission
 
-    Script->>ADB: [5/5] adb shell cmd role add-role-holder android.app.role.HOME com.tvlauncher
+    Script->>ADB: Step 5/5: adb shell cmd role add-role-holder android.app.role.HOME com.tvlauncher
     ADB->>TV: Set tvlauncher as default HOME role holder
 
     Script->>ADB: adb shell am start -n com.tvlauncher/.MainActivity
