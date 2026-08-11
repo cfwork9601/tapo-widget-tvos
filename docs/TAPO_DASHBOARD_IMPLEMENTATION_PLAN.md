@@ -22,7 +22,7 @@ Update the [Development Log](./DEVELOPMENT_LOG.md) whenever a phase advances, a 
 2. Filter results to `packageName === "com.tplink.iot"`.
 3. Record the provider class, label, minimum dimensions, Tapo app version, Android version, and device model.
 4. Mount each provider once and record whether it binds, renders, requires configuration, or fails.
-5. Store the results in a versioned test-results document.
+5. Store the results in the versioned [Tapo Provider Inventory](./TAPO_PROVIDER_INVENTORY.md).
 
 ### Acceptance criteria
 
