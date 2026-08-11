@@ -35,7 +35,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | `e0a9bb7` | Added the phased Tapo dashboard implementation plan. |
 | `6279757` | Tied widget listening to activity lifecycle, removed hidden native ID allocation, and added allocation-failure feedback. |
 | `9c6bfdd` | Documented host lifecycle and widget ID ownership hardening. |
-| Phase 2 working tree | Built `TapoProviderPickerModal` with D-pad navigation, filtering `com.tplink.iot` providers and allocating widget IDs upon selection. |
+| `56f8e3d` | Built `TapoProviderPickerModal` with D-pad navigation, filtering `com.tplink.iot` providers and allocating widget IDs upon selection. |
 
 ## Important Decisions
 
