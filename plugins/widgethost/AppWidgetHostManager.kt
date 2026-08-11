@@ -1,4 +1,4 @@
-package com.tvlauncher.widgethost
+package com.widgetlauncher.widgethost
 
 import android.appwidget.AppWidgetHost
 import android.content.Context

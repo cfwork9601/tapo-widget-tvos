@@ -1,4 +1,4 @@
-# Agent Guidelines — `tapo-widget-tvos` (`com.tvlauncher`)
+# Agent Guidelines — `Tapo Widget Hub` (`com.widgetlauncher`)
 
 > [!IMPORTANT]
 > **Coding Agent Instructions**: Read this document and [`docs/agent.md`](file:///home/thanhtuan/projects/tvlnc/docs/agent.md) before generating or editing any code in this repository.

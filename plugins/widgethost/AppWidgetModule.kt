@@ -1,4 +1,4 @@
-package com.tvlauncher.widgethost
+package com.widgetlauncher.widgethost
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -17,7 +17,7 @@ class AppWidgetModule(private val reactContext: ReactApplicationContext) : React
   override fun getName(): String = "AppWidgetModule"
 
   private val sharedPrefs: SharedPreferences
-    get() = reactContext.getSharedPreferences("tvlauncher_prefs", Context.MODE_PRIVATE)
+    get() = reactContext.getSharedPreferences("widgetlauncher_prefs", Context.MODE_PRIVATE)
 
   @ReactMethod
   fun getInstalledProviders(promise: Promise) {

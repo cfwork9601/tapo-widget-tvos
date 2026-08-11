@@ -1,4 +1,4 @@
-package com.tvlauncher
+package com.widgetlauncher
 
 import android.app.Application
 import android.content.res.Configuration
@@ -21,7 +21,7 @@ class MainApplication : Application(), ReactApplication {
       context = applicationContext,
       packageList =
         PackageList(this).packages.apply {
-          add(com.tvlauncher.widgethost.AppWidgetHostPackage())
+          add(com.widgetlauncher.widgethost.AppWidgetHostPackage())
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
         }

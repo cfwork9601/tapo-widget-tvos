@@ -1,8 +1,8 @@
-package com.tvlauncher
+package com.widgetlauncher
 
 import android.os.Build
 import android.os.Bundle
-import com.tvlauncher.widgethost.AppWidgetHostManager
+import com.widgetlauncher.widgethost.AppWidgetHostManager
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

@@ -288,7 +288,7 @@ export default function HomeScreen() {
         {/* ROW 1: Header & Settings Control Row */}
         <View style={styles.row1Settings}>
           <View style={styles.headerInfo}>
-            <Text style={styles.title}>tapo-widget Smart Dashboard</Text>
+            <Text style={styles.title}>Tapo Widget Hub</Text>
             <Text style={styles.subtitle}>
               {loading
                 ? 'Enumerating Installed Providers...'

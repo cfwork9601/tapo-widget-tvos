@@ -41,13 +41,13 @@ for TARGET in "${DEVICES[@]}"; do
     adb -s "${DEVICE_IP}" shell pm install -r /data/local/tmp/tapo-widget.apk
 
     echo "  [4/5] Granting appwidget bind permission silently..."
-    adb -s "${DEVICE_IP}" shell appwidget grantbind --package com.tvlauncher --user 0 || true
+    adb -s "${DEVICE_IP}" shell appwidget grantbind --package com.widgetlauncher --user 0 || true
 
     echo "  [5/5] Setting default HOME launcher role & launching..."
-    adb -s "${DEVICE_IP}" shell cmd role add-role-holder --user 0 android.app.role.HOME com.tvlauncher || true
-    adb -s "${DEVICE_IP}" shell am start -n com.tvlauncher/.MainActivity || true
+    adb -s "${DEVICE_IP}" shell cmd role add-role-holder --user 0 android.app.role.HOME com.widgetlauncher || true
+    adb -s "${DEVICE_IP}" shell am start -n com.widgetlauncher/.MainActivity || true
 
-    echo "  ✅ Successfully deployed tapo-widget to ${DEVICE_IP}!"
+    echo "  ✅ Successfully deployed Tapo Widget Hub to ${DEVICE_IP}!"
   else
     echo "  ⚠️ Skipping ${DEVICE_IP}: Device not available via ADB."
   fi

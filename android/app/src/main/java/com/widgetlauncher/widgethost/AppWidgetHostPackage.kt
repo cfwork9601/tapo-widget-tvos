@@ -1,4 +1,4 @@
-package com.tvlauncher.widgethost
+package com.widgetlauncher.widgethost
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

@@ -15,7 +15,7 @@ module.exports = function withNativeWidgetHost(config) {
         'main',
         'java',
         'com',
-        'tvlauncher',
+        'widgetlauncher',
         'widgethost'
       );
 
@@ -38,7 +38,7 @@ module.exports = function withNativeWidgetHost(config) {
     if (!contents.includes('AppWidgetHostPackage')) {
       contents = contents.replace(
         'PackageList(this).packages.apply {',
-        'PackageList(this).packages.apply {\n          add(com.tvlauncher.widgethost.AppWidgetHostPackage())'
+        'PackageList(this).packages.apply {\n          add(com.widgetlauncher.widgethost.AppWidgetHostPackage())'
       );
       config.modResults.contents = contents;
     }
@@ -50,10 +50,10 @@ module.exports = function withNativeWidgetHost(config) {
   config = withMainActivity(config, (config) => {
     let contents = config.modResults.contents;
 
-    if (!contents.includes('import com.tvlauncher.widgethost.AppWidgetHostManager')) {
+    if (!contents.includes('import com.widgetlauncher.widgethost.AppWidgetHostManager')) {
       contents = contents.replace(
         'import android.os.Bundle',
-        'import android.os.Bundle\nimport com.tvlauncher.widgethost.AppWidgetHostManager'
+        'import android.os.Bundle\nimport com.widgetlauncher.widgethost.AppWidgetHostManager'
       );
     }
 

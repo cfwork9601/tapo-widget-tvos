@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "tapo-widget",
-    "slug": "tapo-widget",
+    "name": "Tapo Widget Hub",
+    "slug": "tapo-widget-hub",
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "android": {
-      "package": "com.tvlauncher",
+      "package": "com.widgetlauncher",
       "adaptiveIcon": {
         "backgroundColor": "#0f172a",
         "foregroundImage": "./assets/adaptive-icon.png"
@@ -20,6 +20,9 @@
       "./plugins/withLauncherManifest.js",
       "./plugins/withNativeWidgetHost.js",
       "expo-splash-screen"
-    ]
+    ],
+    "ios": {
+      "bundleIdentifier": "com.widgetlauncher"
+    }
   }
 }
