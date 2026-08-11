@@ -9,7 +9,7 @@ TV Launcher (`com.tvlauncher`) is an Android TV home launcher and smart-dashboar
 
 The app uses React Native and Expo for its TV interface and a Kotlin bridge to host Android `AppWidget` instances inside React Native cards. It can be assigned the Android HOME role, letting the dashboard replace the device's default launcher.
 
-The implementation is a promising proof of concept for a fixed Tapo setup. It is not yet a generic, production-hardened widget launcher.
+The implementation is a promising proof of concept for a fixed Tapo setup. It is not yet a production-hardened dashboard with full coverage of the Tapo widgets installed on the device.
 
 ## User Experience
 
@@ -28,7 +28,7 @@ The dashboard currently exposes explicit controls for only these providers:
 | Tapo Camera | `com.tplink.iot` | `com.tplink.libwidgetui.camerawidget.CameraWidgetProvider` |
 | Tapo Smart Plug | `com.tplink.iot` | `com.tplink.libwidgetui.plugwidget.WidgetOnOffProvider` |
 
-Although the app enumerates all installed providers, it does not currently offer a provider picker or a way to add arbitrary enumerated widgets.
+Although the app enumerates all installed providers, it does not currently offer a picker for the full set of installed Tapo providers.
 
 ## Architecture
 
@@ -69,11 +69,11 @@ The broad `QUERY_ALL_PACKAGES` permission is used to enumerate installed widget 
 
 ## Findings
 
-### 1. Provider support is narrower than the provider enumeration suggests
+### 1. Tapo provider support is narrower than the provider enumeration suggests
 
-`getInstalledProviders()` returns information about every installed app-widget provider, but `HomeScreen` only creates the two hard-coded Tapo widgets listed above. The generic native bridge is capable of binding arbitrary providers, but the user interface does not expose that capability.
+`getInstalledProviders()` returns information about every installed app-widget provider, but `HomeScreen` only creates the two hard-coded Tapo widgets listed above. The user interface does not expose the remaining installed Tapo provider classes.
 
-**Impact:** The app behaves as a Tapo dashboard rather than a general widget launcher.
+**Impact:** The app supports only a small subset of the Tapo dashboard experience intended for this branch.
 
 ### 2. The modal live-stream command does not perform a widget click
 
@@ -113,10 +113,9 @@ The architecture documentation states that widget updates are started in `onResu
 
 ## Recommended Next Steps
 
-1. Add a provider picker based on `getInstalledProviders()` and remove provider-specific creation from the dashboard.
-2. Implement reliable per-widget actions rather than a fixed Tapo coordinate click; retain provider-specific behavior behind an explicit adapter if needed.
+1. Add a Tapo-only provider picker based on `getInstalledProviders()`, filtering for `com.tplink.iot` and exposing every installed Tapo widget provider.
+2. Implement reliable, per-widget Tapo actions rather than a fixed coordinate click; use an explicit adapter where a Tapo widget family needs specialized behavior.
 3. Start and stop `AppWidgetHost` listening in `MainActivity.onResume()` and `onPause()`.
 4. Make widget ID ownership explicit: report allocations back to JavaScript, clean up abandoned IDs, and handle allocation/bind failure visibly.
 5. Update the architecture and Tapo feature documents to match the behavior that is actually shipped.
 6. Add automated native build verification and a small UI/integration test suite for widget persistence, binding, removal, and focus navigation.
-
