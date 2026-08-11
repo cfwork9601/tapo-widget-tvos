@@ -19,6 +19,7 @@ export interface WidgetCardProps {
   label?: string;
   width?: number;
   height?: number;
+  triggerWidgetClick?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
   onRemove?: () => void;
@@ -32,6 +33,7 @@ export default function WidgetCard({
   label,
   width = 540,
   height = 380,
+  triggerWidgetClick = true,
   onPress,
   onLongPress,
   onRemove,
@@ -42,7 +44,9 @@ export default function WidgetCard({
   const [clickToken, setClickToken] = useState<number>(0);
 
   const handleCardPress = () => {
-    setClickToken((prev) => prev + 1);
+    if (triggerWidgetClick) {
+      setClickToken((prev) => prev + 1);
+    }
     if (onPress) {
       onPress();
     }

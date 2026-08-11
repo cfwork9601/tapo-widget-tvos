@@ -14,13 +14,14 @@ import WidgetCard from '../components/WidgetCard';
 import {
   getInstalledProviders,
   launchApp,
-  launchWidgetClick,
   getSetting,
   saveSetting,
   allocateAppWidgetId,
   deleteAppWidgetId,
   WidgetProviderInfo,
 } from '../services/WidgetProviderService';
+
+type WidgetClickAction = 'widget_primary' | 'open_tapo_app' | 'none';
 
 interface ActiveWidget {
   instanceId: string;
@@ -30,7 +31,41 @@ interface ActiveWidget {
   label: string;
   width?: number;
   height?: number;
+  clickAction?: WidgetClickAction;
 }
+
+interface WidgetActionOption {
+  id: WidgetClickAction;
+  label: string;
+  description: string;
+}
+
+const WIDGET_ACTION_OPTIONS: WidgetActionOption[] = [
+  {
+    id: 'widget_primary',
+    label: 'Use widget primary action',
+    description: 'Send the card press to the Tapo widget.',
+  },
+  {
+    id: 'open_tapo_app',
+    label: 'Open Tapo app',
+    description: 'Open the Tapo application instead of the widget action.',
+  },
+  {
+    id: 'none',
+    label: 'No action',
+    description: 'Keep card selection focused without running an action.',
+  },
+];
+
+const isWidgetClickAction = (value: unknown): value is WidgetClickAction =>
+  value === 'widget_primary' || value === 'open_tapo_app' || value === 'none';
+
+const getWidgetClickAction = (widget: ActiveWidget): WidgetClickAction =>
+  isWidgetClickAction(widget.clickAction) ? widget.clickAction : 'widget_primary';
+
+const getWidgetClickActionOption = (widget: ActiveWidget): WidgetActionOption =>
+  WIDGET_ACTION_OPTIONS.find((option) => option.id === getWidgetClickAction(widget)) ?? WIDGET_ACTION_OPTIONS[0];
 
 const TAPO_CAMERA = {
   packageName: 'com.tplink.iot',
@@ -91,6 +126,7 @@ export default function HomeScreen() {
   const [layoutMode, setLayoutMode] = useState<'grid' | 'slide'>('grid');
   const [tilesPerRow, setTilesPerRow] = useState<number>(2);
   const [selectedWidget, setSelectedWidget] = useState<ActiveWidget | null>(null);
+  const [isActionSettingsOpen, setIsActionSettingsOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<ActiveWidget[]>([]);
 
   // Dynamic layout calculations based on tilesPerRow setting
@@ -115,6 +151,10 @@ export default function HomeScreen() {
               const capped = parsed.slice(0, 20);
               let updated = false;
               for (const item of capped) {
+                if (!isWidgetClickAction(item.clickAction)) {
+                  item.clickAction = 'widget_primary';
+                  updated = true;
+                }
                 if (!item.appWidgetId || item.appWidgetId <= 0) {
                   item.appWidgetId = await allocateAppWidgetId();
                   updated = true;
@@ -168,11 +208,23 @@ export default function HomeScreen() {
   };
 
   const handleCardPress = (item: ActiveWidget) => {
-    // Native WidgetCard increments clickToken to click the Go Live button inside the AppWidgetHostView
+    if (getWidgetClickAction(item) === 'open_tapo_app') {
+      launchApp(item.packageName);
+    }
   };
 
   const handleCardLongPress = (item: ActiveWidget) => {
+    setIsActionSettingsOpen(false);
     setSelectedWidget(item);
+  };
+
+  const updateWidgetClickAction = (instanceId: string, clickAction: WidgetClickAction) => {
+    const updated = activeWidgets.map((widget) =>
+      widget.instanceId === instanceId ? { ...widget, clickAction } : widget
+    );
+    persistWidgets(updated);
+    setSelectedWidget(updated.find((widget) => widget.instanceId === instanceId) ?? null);
+    setIsActionSettingsOpen(false);
   };
 
   const addCameraWidget = async () => {
@@ -307,6 +359,7 @@ export default function HomeScreen() {
                   className={item.className}
                   width={cardWidth}
                   height={cardHeight}
+                  triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
                   onPress={() => handleCardPress(item)}
                   onLongPress={() => handleCardLongPress(item)}
                   onRemove={() => removeWidget(item.instanceId)}
@@ -329,6 +382,7 @@ export default function HomeScreen() {
                   className={item.className}
                   width={cardWidth}
                   height={cardHeight}
+                  triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
                   onPress={() => handleCardPress(item)}
                   onLongPress={() => handleCardLongPress(item)}
                   onRemove={() => removeWidget(item.instanceId)}
@@ -344,56 +398,85 @@ export default function HomeScreen() {
         visible={selectedWidget !== null}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setSelectedWidget(null)}
+        onRequestClose={() => {
+          if (isActionSettingsOpen) {
+            setIsActionSettingsOpen(false);
+          } else {
+            setSelectedWidget(null);
+          }
+        }}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedWidget(null)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            setIsActionSettingsOpen(false);
+            setSelectedWidget(null);
+          }}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{selectedWidget?.label || 'Widget Options'}</Text>
             <Text style={styles.modalSubtext}>{selectedWidget?.packageName}</Text>
 
-            <TouchableOpacity
-              focusable={true}
-              hasTVPreferredFocus={true}
-              style={styles.modalOptionBtn}
-              onPress={() => {
-                const pkg = selectedWidget?.packageName;
-                const widgetId = selectedWidget?.appWidgetId ?? -1;
-                setSelectedWidget(null);
-                if (pkg) launchWidgetClick(pkg, widgetId);
-              }}
-            >
-              <Text style={styles.modalOptionText}>📹 View Live Stream</Text>
-            </TouchableOpacity>
+            {isActionSettingsOpen ? (
+              <>
+                <Text style={styles.actionSettingsHint}>Choose what happens when this card is pressed.</Text>
+                {WIDGET_ACTION_OPTIONS.map((option, index) => {
+                  const isSelected = selectedWidget && getWidgetClickAction(selectedWidget) === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      focusable={true}
+                      hasTVPreferredFocus={index === 0}
+                      style={[styles.modalOptionBtn, isSelected ? styles.modalOptionBtnSelected : null]}
+                      onPress={() => selectedWidget && updateWidgetClickAction(selectedWidget.instanceId, option.id)}
+                    >
+                      <Text style={styles.modalOptionText}>{isSelected ? '✓ ' : ''}{option.label}</Text>
+                      <Text style={styles.modalOptionDescription}>{option.description}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity focusable={true} style={styles.modalCancelBtn} onPress={() => setIsActionSettingsOpen(false)}>
+                  <Text style={styles.modalCancelText}>Back</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  focusable={true}
+                  hasTVPreferredFocus={true}
+                  style={styles.modalOptionBtn}
+                  onPress={() => setIsActionSettingsOpen(true)}
+                >
+                  <Text style={styles.modalOptionText}>⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              focusable={true}
-              style={styles.modalOptionBtn}
-              onPress={() => {
-                const pkg = selectedWidget?.packageName;
-                setSelectedWidget(null);
-                if (pkg) launchApp(pkg);
-              }}
-            >
-              <Text style={styles.modalOptionText}>🎬 View Saved Clips</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  focusable={true}
+                  style={styles.modalOptionBtn}
+                  onPress={() => {
+                    const pkg = selectedWidget?.packageName;
+                    setSelectedWidget(null);
+                    if (pkg) launchApp(pkg);
+                  }}
+                >
+                  <Text style={styles.modalOptionText}>Open Tapo App Now</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              focusable={true}
-              style={[styles.modalOptionBtn, styles.modalOptionDanger]}
-              onPress={() => {
-                if (selectedWidget) removeWidget(selectedWidget.instanceId);
-              }}
-            >
-              <Text style={[styles.modalOptionText, styles.modalOptionDangerText]}>🗑️ Delete Widget</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  focusable={true}
+                  style={[styles.modalOptionBtn, styles.modalOptionDanger]}
+                  onPress={() => {
+                    if (selectedWidget) removeWidget(selectedWidget.instanceId);
+                  }}
+                >
+                  <Text style={[styles.modalOptionText, styles.modalOptionDangerText]}>🗑️ Delete Widget</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              focusable={true}
-              style={styles.modalCancelBtn}
-              onPress={() => setSelectedWidget(null)}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
+                <TouchableOpacity focusable={true} style={styles.modalCancelBtn} onPress={() => setSelectedWidget(null)}>
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </Pressable>
       </Modal>
@@ -576,6 +659,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 20,
   },
+  actionSettingsHint: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 14,
+    textAlign: 'center',
+  },
   modalOptionBtn: {
     width: '100%',
     backgroundColor: '#334155',
@@ -586,10 +676,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#475569',
   },
+  modalOptionBtnSelected: {
+    backgroundColor: '#075985',
+    borderColor: '#38bdf8',
+  },
   modalOptionText: {
     color: '#f8fafc',
     fontSize: 15,
     fontWeight: '600',
+  },
+  modalOptionDescription: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
   },
   modalOptionDanger: {
     backgroundColor: '#7f1d1d',
