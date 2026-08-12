@@ -9,6 +9,7 @@ import {
   Modal,
   Pressable,
   useWindowDimensions,
+  TextInput,
 } from 'react-native';
 import WidgetCard from '../components/WidgetCard';
 import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
@@ -30,6 +31,7 @@ interface ActiveWidget {
   packageName: string;
   className: string;
   label: string;
+  customLabel?: string;
   width?: number;
   height?: number;
   clickAction?: WidgetClickAction;
@@ -59,6 +61,16 @@ const WIDGET_ACTION_OPTIONS: WidgetActionOption[] = [
   },
 ];
 
+const QUICK_RENAME_PRESETS = [
+  'Front Yard Camera',
+  'Backyard Camera',
+  'Driveway Camera',
+  'Living Room Plug',
+  'Master Plug',
+  'Porch Light',
+  'Hallway Switch',
+];
+
 const isWidgetClickAction = (value: unknown): value is WidgetClickAction =>
   value === 'widget_primary' || value === 'open_tapo_app' || value === 'none';
 
@@ -67,20 +79,6 @@ const getWidgetClickAction = (widget: ActiveWidget): WidgetClickAction =>
 
 const getWidgetClickActionOption = (widget: ActiveWidget): WidgetActionOption =>
   WIDGET_ACTION_OPTIONS.find((option) => option.id === getWidgetClickAction(widget)) ?? WIDGET_ACTION_OPTIONS[0];
-
-const TAPO_CAMERA = {
-  packageName: 'com.tplink.iot',
-  className: 'com.tplink.libwidgetui.camerawidget.CameraWidgetProvider',
-  label: 'Tapo Camera',
-};
-
-const TAPO_PLUG = {
-  packageName: 'com.tplink.iot',
-  className: 'com.tplink.libwidgetui.plugwidget.WidgetOnOffProvider',
-  label: 'Tapo Smart Plug',
-};
-
-const DEFAULT_WIDGETS: ActiveWidget[] = [];
 
 interface ControlBtnProps {
   label: string;
@@ -128,14 +126,16 @@ export default function HomeScreen() {
   const [tilesPerRow, setTilesPerRow] = useState<number>(2);
   const [selectedWidget, setSelectedWidget] = useState<ActiveWidget | null>(null);
   const [isActionSettingsOpen, setIsActionSettingsOpen] = useState(false);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renameInputText, setRenameInputText] = useState('');
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<ActiveWidget[]>([]);
   const [widgetOperationError, setWidgetOperationError] = useState<string | null>(null);
 
   // Dynamic layout calculations based on tilesPerRow setting
-  const containerPadding = 40; // 20px padding left + 20px right
+  const containerPadding = 40;
   const availableWidth = Math.max(screenWidth - containerPadding, 600);
-  const tileMargin = 16; // 8px left + 8px right
+  const tileMargin = 16;
   const cardWidth = Math.floor((availableWidth - tilesPerRow * tileMargin) / tilesPerRow);
   const cardHeight = Math.max(Math.floor(cardWidth * 0.78), 280);
 
@@ -225,6 +225,8 @@ export default function HomeScreen() {
 
   const handleCardLongPress = (item: ActiveWidget) => {
     setIsActionSettingsOpen(false);
+    setIsRenameOpen(false);
+    setRenameInputText(item.customLabel || '');
     setSelectedWidget(item);
   };
 
@@ -235,6 +237,40 @@ export default function HomeScreen() {
     persistWidgets(updated);
     setSelectedWidget(updated.find((widget) => widget.instanceId === instanceId) ?? null);
     setIsActionSettingsOpen(false);
+  };
+
+  const updateWidgetCustomLabel = (instanceId: string, customLabel: string) => {
+    const trimmed = customLabel.trim();
+    const updated = activeWidgets.map((widget) =>
+      widget.instanceId === instanceId ? { ...widget, customLabel: trimmed || undefined } : widget
+    );
+    persistWidgets(updated);
+    setSelectedWidget(updated.find((widget) => widget.instanceId === instanceId) ?? null);
+    setIsRenameOpen(false);
+  };
+
+  const handleRetryBind = async (instanceId: string) => {
+    setWidgetOperationError(null);
+    const target = activeWidgets.find((w) => w.instanceId === instanceId);
+    if (!target) return;
+
+    if (target.appWidgetId && target.appWidgetId > 0) {
+      await deleteAppWidgetId(target.appWidgetId);
+    }
+
+    const newId = await allocateAppWidgetId();
+    if (newId <= 0) {
+      setWidgetOperationError(`Failed to re-allocate widget ID for ${target.customLabel || target.label}.`);
+      return;
+    }
+
+    const updated = activeWidgets.map((w) =>
+      w.instanceId === instanceId ? { ...w, appWidgetId: newId } : w
+    );
+    persistWidgets(updated);
+    if (selectedWidget?.instanceId === instanceId) {
+      setSelectedWidget(updated.find((w) => w.instanceId === instanceId) ?? null);
+    }
   };
 
   const addWidget = async (
@@ -361,21 +397,31 @@ export default function HomeScreen() {
           ) : layoutMode === 'grid' ? (
             /* Grid View Row */
             <View style={styles.gridContainer}>
-              {activeWidgets.map((item) => (
-                <WidgetCard
-                  key={item.instanceId}
-                  appWidgetId={item.appWidgetId}
-                  label={item.label}
-                  packageName={item.packageName}
-                  className={item.className}
-                  width={cardWidth}
-                  height={cardHeight}
-                  triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
-                  onPress={() => handleCardPress(item)}
-                  onLongPress={() => handleCardLongPress(item)}
-                  onRemove={() => removeWidget(item.instanceId)}
-                />
-              ))}
+              {activeWidgets.map((item) => {
+                const isInstalled = providers.length === 0 || providers.some(
+                  (p) => p.packageName === item.packageName && p.className === item.className
+                );
+                return (
+                  <WidgetCard
+                    key={item.instanceId}
+                    appWidgetId={item.appWidgetId}
+                    label={item.label}
+                    customLabel={item.customLabel}
+                    packageName={item.packageName}
+                    className={item.className}
+                    width={cardWidth}
+                    height={cardHeight}
+                    isInstalled={isInstalled}
+                    triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
+                    onPress={() => handleCardPress(item)}
+                    onLongPress={() => handleCardLongPress(item)}
+                    onOptions={() => handleCardLongPress(item)}
+                    onRemove={() => removeWidget(item.instanceId)}
+                    onRetryBind={() => handleRetryBind(item.instanceId)}
+                    onOpenApp={() => launchApp(item.packageName)}
+                  />
+                );
+              })}
             </View>
           ) : (
             /* Horizontal Slider Carousel Row */
@@ -384,21 +430,31 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.slideContainer}
             >
-              {activeWidgets.map((item) => (
-                <WidgetCard
-                  key={item.instanceId}
-                  appWidgetId={item.appWidgetId}
-                  label={item.label}
-                  packageName={item.packageName}
-                  className={item.className}
-                  width={cardWidth}
-                  height={cardHeight}
-                  triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
-                  onPress={() => handleCardPress(item)}
-                  onLongPress={() => handleCardLongPress(item)}
-                  onRemove={() => removeWidget(item.instanceId)}
-                />
-              ))}
+              {activeWidgets.map((item) => {
+                const isInstalled = providers.length === 0 || providers.some(
+                  (p) => p.packageName === item.packageName && p.className === item.className
+                );
+                return (
+                  <WidgetCard
+                    key={item.instanceId}
+                    appWidgetId={item.appWidgetId}
+                    label={item.label}
+                    customLabel={item.customLabel}
+                    packageName={item.packageName}
+                    className={item.className}
+                    width={cardWidth}
+                    height={cardHeight}
+                    isInstalled={isInstalled}
+                    triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
+                    onPress={() => handleCardPress(item)}
+                    onLongPress={() => handleCardLongPress(item)}
+                    onOptions={() => handleCardLongPress(item)}
+                    onRemove={() => removeWidget(item.instanceId)}
+                    onRetryBind={() => handleRetryBind(item.instanceId)}
+                    onOpenApp={() => launchApp(item.packageName)}
+                  />
+                );
+              })}
             </ScrollView>
           )}
         </View>
@@ -410,7 +466,9 @@ export default function HomeScreen() {
         transparent={true}
         animationType="fade"
         onRequestClose={() => {
-          if (isActionSettingsOpen) {
+          if (isRenameOpen) {
+            setIsRenameOpen(false);
+          } else if (isActionSettingsOpen) {
             setIsActionSettingsOpen(false);
           } else {
             setSelectedWidget(null);
@@ -420,15 +478,55 @@ export default function HomeScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
+            setIsRenameOpen(false);
             setIsActionSettingsOpen(false);
             setSelectedWidget(null);
           }}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{selectedWidget?.label || 'Widget Options'}</Text>
+            <Text style={styles.modalTitle}>
+              {selectedWidget?.customLabel || selectedWidget?.label || 'Widget Options'}
+            </Text>
             <Text style={styles.modalSubtext}>{selectedWidget?.packageName}</Text>
 
-            {isActionSettingsOpen ? (
+            {isRenameOpen ? (
+              /* Rename Sub-Menu */
+              <>
+                <Text style={styles.actionSettingsHint}>Choose a quick name or clear custom label.</Text>
+                <ScrollView style={styles.presetScroll} contentContainerStyle={{ gap: 8 }}>
+                  {QUICK_RENAME_PRESETS.map((preset, idx) => (
+                    <TouchableOpacity
+                      key={preset}
+                      focusable={true}
+                      hasTVPreferredFocus={idx === 0}
+                      style={styles.modalOptionBtn}
+                      onPress={() => selectedWidget && updateWidgetCustomLabel(selectedWidget.instanceId, preset)}
+                    >
+                      <Text style={styles.modalOptionText}>{preset}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {selectedWidget?.customLabel ? (
+                  <TouchableOpacity
+                    focusable={true}
+                    style={[styles.modalOptionBtn, styles.modalOptionDanger]}
+                    onPress={() => selectedWidget && updateWidgetCustomLabel(selectedWidget.instanceId, '')}
+                  >
+                    <Text style={[styles.modalOptionText, styles.modalOptionDangerText]}>Reset to Default Name</Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                <TouchableOpacity
+                  focusable={true}
+                  style={styles.modalCancelBtn}
+                  onPress={() => setIsRenameOpen(false)}
+                >
+                  <Text style={styles.modalCancelText}>Back</Text>
+                </TouchableOpacity>
+              </>
+            ) : isActionSettingsOpen ? (
+              /* Click Action Settings Sub-Menu */
               <>
                 <Text style={styles.actionSettingsHint}>Choose what happens when this card is pressed.</Text>
                 {WIDGET_ACTION_OPTIONS.map((option, index) => {
@@ -451,14 +549,37 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </>
             ) : (
+              /* Main Card Context Menu */
               <>
                 <TouchableOpacity
                   focusable={true}
                   hasTVPreferredFocus={true}
                   style={styles.modalOptionBtn}
+                  onPress={() => setIsRenameOpen(true)}
+                >
+                  <Text style={styles.modalOptionText}>✏️ Rename Widget</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  focusable={true}
+                  style={styles.modalOptionBtn}
+                  onPress={() => {
+                    if (selectedWidget) {
+                      handleRetryBind(selectedWidget.instanceId);
+                    }
+                  }}
+                >
+                  <Text style={styles.modalOptionText}>🔄 Retry Binding / Refresh ID</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  focusable={true}
+                  style={styles.modalOptionBtn}
                   onPress={() => setIsActionSettingsOpen(true)}
                 >
-                  <Text style={styles.modalOptionText}>⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}</Text>
+                  <Text style={styles.modalOptionText}>
+                    ⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -470,7 +591,7 @@ export default function HomeScreen() {
                     if (pkg) launchApp(pkg);
                   }}
                 >
-                  <Text style={styles.modalOptionText}>Open Tapo App Now</Text>
+                  <Text style={styles.modalOptionText}>📱 Open Tapo App Now</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -662,7 +783,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e293b',
     borderRadius: 16,
     padding: 24,
-    width: 380,
+    width: 400,
+    maxHeight: '85%',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#38bdf8',
@@ -689,6 +811,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 14,
     textAlign: 'center',
+  },
+  presetScroll: {
+    width: '100%',
+    maxHeight: 220,
+    marginBottom: 12,
   },
   modalOptionBtn: {
     width: '100%',
