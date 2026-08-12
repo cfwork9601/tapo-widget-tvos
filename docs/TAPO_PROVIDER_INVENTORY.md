@@ -19,10 +19,10 @@ The target device reports these 13 Tapo providers. Dimensions are the provider m
 
 | # | Provider class | Widget family | Minimum size | Configure activity observed | Mount/render result |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `com.tplink.libwidgetui.plugwidget.WidgetOnOffProvider` | Smart plug | 180 × 40 | Yes | Not tested |
-| 2 | `com.tplink.libwidgetui.bulbwidget.BulbWidgetProvider` | Bulb | 250 × 40 | Yes | Not tested |
+| 1 | `com.tplink.libwidgetui.plugwidget.WidgetOnOffProvider` | Smart plug | 180 × 40 | Yes | Verified bound & rendering native layout via picker |
+| 2 | `com.tplink.libwidgetui.bulbwidget.BulbWidgetProvider` | Bulb | 250 × 40 | Yes | Verified bound & rendering native layout via picker |
 | 3 | `com.tplink.libwidgetui.switchwidget.FanAppWidgetProvider` | Fan switch | 250 × 40 | Yes | Not tested |
-| 4 | `com.tplink.libwidgetui.camerawidget.CameraWidgetProvider` | Camera | 250 × 180 | Yes | Bound to TV Launcher; RemoteViews present |
+| 4 | `com.tplink.libwidgetui.camerawidget.CameraWidgetProvider` | Camera | 250 × 180 | Yes | Verified bound & rendering live camera feeds |
 | 5 | `com.tplink.libwidgetui.sensorwidget.SensorWidgetProvider` | Sensor | 40 × 40 | Yes | Not tested |
 | 6 | `com.tplink.libwidgetui.sensorwidget.PresenceSensorWidgetProvider` | Presence sensor | 180 × 40 | Yes | Not tested |
 | 7 | `com.tplink.libwidgetui.relaymotor.RelayMotorWidgetProvider` | Relay / motor | 250 × 40 | Yes | Not tested |

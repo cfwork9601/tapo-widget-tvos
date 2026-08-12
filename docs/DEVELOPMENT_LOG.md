@@ -16,7 +16,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | --- | --- | --- |
 | Android TV HOME launcher | Implemented | Package `com.widgetlauncher`. Manifest/plugin declares `HOME`, `DEFAULT`, and `LEANBACK_LAUNCHER`. |
 | Native AppWidget host | Implemented prototype | Kotlin bridge hosts Android `AppWidget` views in React Native under `com.widgetlauncher.widgethost`. |
-| Tapo provider inventory | In progress | 13 providers enumerated on target device; per-provider mount/render testing in progress via picker. |
+| Tapo provider inventory | Verified in live testing | 13 providers enumerated on target device; verified live mount/render of Camera (2 live feeds), Smart Plug, and Bulb widgets. |
 | Tapo widget creation | Implemented | Dynamic TV D-pad provider picker filters `getInstalledProviders()` to `com.tplink.iot`. |
 | Per-widget click actions | Implemented foundation | Each card persists **Use widget primary action**, **Open Tapo app**, or **No action**. |
 | Tapo action catalog | Pending device research | Android cannot automatically enumerate proprietary widget actions. |
@@ -38,6 +38,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | `56f8e3d` | Built `TapoProviderPickerModal` with D-pad navigation, filtering `com.tplink.iot` providers and allocating widget IDs upon selection. |
 | `cf1a03b` | Updated development log with Phase 2 completion state and commit reference. |
 | `3b2cb2a` | Renamed app to Tapo Widget Hub (`tapo-widget-hub`) and package to `com.widgetlauncher` across Expo config, native Kotlin sources, scripts, and prebuild. |
+| `da2eb9e` | Verified provider picker, camera feeds, plug, bulb widgets, and grid layouts on live Onn 4K Pro device; updated docs inventory and validation records. |
 
 ## Important Decisions
 
@@ -56,7 +57,7 @@ Do not start provider-specific action work until that inventory exists. The impl
 | 2026-08-11 | Kotlin compile after lifecycle changes | Pass | `./gradlew :app:compileDebugKotlin --console=plain --quiet` completed successfully after Expo prebuild. |
 | 2026-08-11 | Android TV provider registry | Pass | Onn 4K Pro / Android 14 / Tapo 3.20.154 reports 13 Tapo widget providers; two camera widgets are bound to TV Launcher. See `TAPO_PROVIDER_INVENTORY.md`. |
 | 2026-08-11 | Package rename & Kotlin build | Pass | `npx expo prebuild --clean`, `./gradlew :app:compileDebugKotlin`, and `npx tsc --noEmit` passed with 0 errors for `com.widgetlauncher`. |
-| — | Per-provider mount/render test | Not started | Ready to resume using the newly added Tapo provider picker. |
+| 2026-08-11 | Per-provider mount/render test | Pass | Deployed build to Onn 4K Pro (`192.168.1.67:5555`). Opened `TapoProviderPickerModal`, verified 13 providers detected, successfully mounted & rendered Camera (2 live feeds), Smart Plug, and Bulb widgets simultaneously in 2, 3, and 4-column layouts. |
 
 ## Update Rules
 
