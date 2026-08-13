@@ -20,6 +20,16 @@ import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
 
 class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
+  init {
+    isFocusable = false
+    descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+  }
+
+  override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+    // Intercept touch events so child RemoteViews don't swallow gestures from parent React Native Pressable
+    return true
+  }
+
   var appWidgetId: Int = -1
     set(value) {
       if (field != value) {
@@ -104,6 +114,8 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         val pureContext = ContextThemeWrapper(context.applicationContext, android.R.style.Theme_DeviceDefault)
         val v = host.createView(pureContext, targetId, info)
         v.setAppWidget(targetId, info)
+        v.isFocusable = false
+        v.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         hostView = v
         currentBoundId = targetId
         currentBoundPkg = pkg

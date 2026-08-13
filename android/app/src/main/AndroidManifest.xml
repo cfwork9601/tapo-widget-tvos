@@ -28,6 +28,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="widget-hub"/>
         <data android:scheme="exp+tapo-widget-hub"/>
       </intent-filter>
       <intent-filter>

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = function withNativeWidgetHost(config) {
-  // 1. Copy native Kotlin files into android/app/src/main/java/com/tvlauncher/widgethost/
+  // 1. Copy native Kotlin files into android/app/src/main/java/com/widgetlauncher/widgethost/
   config = withDangerousMod(config, [
     'android',
     async (config) => {

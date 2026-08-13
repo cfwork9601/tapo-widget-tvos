@@ -5,10 +5,10 @@
 
 ## Resume Here
 
-**Current implementation phase:** Phase 3 complete; Phase 4 — expand Tapo action catalog & per-device customization — is next.
-**Next required action:** Implement Phase 4 per-widget action customization and device-specific Tapo action mappings in `HomeScreen.tsx` and native bridge.
+**Current implementation phase:** Phase 3 complete; **Cinematic Widget Media Row & Customizer Panel** specification drafted in [WIDGET_MEDIA_ROW_FEATURE.md](./WIDGET_MEDIA_ROW_FEATURE.md).
+**Next required action:** Implement `WidgetMediaCard.tsx` (16:9 widescreen card layout), horizontal scrolling media row in `HomeScreen.tsx`, and slide-out side-sheet customization panel.
 
-The implementation plan is [TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md).
+The implementation plan is [TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md) and [WIDGET_MEDIA_ROW_FEATURE.md](./WIDGET_MEDIA_ROW_FEATURE.md).
 
 ## Current State
 

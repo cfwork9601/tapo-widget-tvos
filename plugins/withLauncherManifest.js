@@ -62,6 +62,24 @@ module.exports = function withLauncherManifest(config) {
             ],
           });
         }
+
+        const hasWidgetHubFilter = mainActivity['intent-filter'].some((filter) =>
+          filter.data?.some((d) => d.$?.['android:scheme'] === 'widget-hub')
+        );
+
+        if (!hasWidgetHubFilter) {
+          mainActivity['intent-filter'].push({
+            action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+            category: [
+              { $: { 'android:name': 'android.intent.category.DEFAULT' } },
+              { $: { 'android:name': 'android.intent.category.BROWSABLE' } },
+            ],
+            data: [
+              { $: { 'android:scheme': 'widget-hub' } },
+              { $: { 'android:scheme': 'tapo-widget-hub' } },
+            ],
+          });
+        }
       }
     }
 

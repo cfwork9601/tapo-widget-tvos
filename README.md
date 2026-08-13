@@ -1,10 +1,10 @@
-# TV Launcher (`com.tvlauncher`)
+# Tapo Widget Hub (`com.widgetlauncher`)
 
 ![TV Launcher Live View](tvlauncher_live.png)
 
-`tvlauncher` is a custom, high-performance Android TV Launcher built with **Expo (SDK 57 dev client)** and **React Native (0.86)**, featuring a native **Kotlin bridge** that embeds live Android `AppWidget` instances directly into the television UI.
+`Tapo Widget Hub` is a custom, high-performance Android TV Launcher built with **Expo (SDK 57 dev client)** and **React Native (0.86)**, featuring a native **Kotlin bridge** that embeds live Android `AppWidget` instances directly into the television UI.
 
-Targeted for streaming media devices such as the **Onn 4K Streaming Box** (Android 14 / API 34), `tvlauncher` transforms standard Android TV into a unified smart home surveillance and widget dashboard with complete TV remote (D-Pad) control.
+Targeted for streaming media devices such as the **Onn 4K Streaming Box** (Android 14 / API 34), `Tapo Widget Hub` transforms standard Android TV into a unified smart home surveillance and widget dashboard with complete TV remote (D-Pad) control.
 
 ---
 
@@ -24,9 +24,9 @@ Targeted for streaming media devices such as the **Onn 4K Streaming Box** (Andro
 - **Language**: TypeScript (JS) / Kotlin (Native Android)
 - **Target OS**: Android TV (Android 14 / API 34)
 - **Native Bridge**:
-  - [`AppWidgetHostManager.kt`](file:///home/thanhtuan/projects/tvlnc/android/app/src/main/java/com/tvlauncher/widgethost/AppWidgetHostManager.kt) — AppWidget ID lifecycle & Activity listening binding.
-  - [`AppWidgetViewManager.kt`](file:///home/thanhtuan/projects/tvlnc/android/app/src/main/java/com/tvlauncher/widgethost/AppWidgetViewManager.kt) — ViewManager rendering host views & handling click token dispatches.
-  - [`AppWidgetModule.kt`](file:///home/thanhtuan/projects/tvlnc/android/app/src/main/java/com/tvlauncher/widgethost/AppWidgetModule.kt) — Provider enumeration native module (`getInstalledProviders()`).
+  - [`AppWidgetHostManager.kt`](file:///home/thanhtuan/projects/tvlnc/android/app/src/main/java/com/widgetlauncher/widgethost/AppWidgetHostManager.kt) — AppWidget ID lifecycle & Activity listening binding.
+  - [`AppWidgetViewManager.kt`](file:///home/thanhtuan/projects/tvlnc/android/app/src/main/java/com/widgetlauncher/widgethost/AppWidgetViewManager.kt) — ViewManager rendering host views & handling click token dispatches.
+  - [`AppWidgetModule.kt`](file:///home/thanhtuan/projects/tvlnc/android/app/src/main/java/com/widgetlauncher/widgethost/AppWidgetModule.kt) — Provider enumeration native module (`getInstalledProviders()`).
 
 ---
 
@@ -66,19 +66,23 @@ cd android && ./gradlew assembleDebug && cd ..
 ├── android/                   # Generated Android native project (managed via Expo prebuild)
 ├── assets/                    # Static assets & images
 ├── docs/                      # Technical documentation & runbooks
+│   ├── README.md              # Master documentation index
 │   ├── ARCHITECTURE.md        # Architectural design & native bridge guide
+│   ├── WIDGET_MEDIA_ROW_FEATURE.md # Specification for cinematic 16:9 widget media rows
 │   ├── RUNBOOK.md             # Step-by-step device deployment & setup guide
 │   ├── TROUBLESHOOTING.md    # Diagnostic & troubleshooting guide
 │   ├── TAPO_CAMERA_LIVE_VIEW_FEATURE.md # Detailed spec for Tapo Live View launch mechanism
 │   ├── agent.md               # AI agent guidelines & strict constraints
 │   └── implementation.md      # Sprint breakdown & implementation roadmap
 ├── plugins/
-│   └── withLauncherManifest.js # Config plugin injecting HOME launcher intent filters & permissions
+│   ├── withLauncherManifest.js # Config plugin injecting HOME launcher intent filters & permissions
+│   └── withNativeWidgetHost.js # Config plugin managing native Kotlin bridge source sync
 ├── scripts/
 │   └── deploy.sh              # Multi-device network ADB deployment script
 ├── src/
 │   ├── components/
-│   │   └── WidgetCard.tsx     # Generic React Native card rendering native AppWidget views
+│   │   ├── WidgetCard.tsx     # Generic React Native card rendering native AppWidget views
+│   │   └── TapoProviderPickerModal.tsx # TV D-Pad modal for picking installed Tapo widgets
 │   ├── screens/
 │   │   └── HomeScreen.tsx     # TV home screen grid, D-Pad focus handling & modal popups
 │   └── services/
@@ -90,7 +94,9 @@ cd android && ./gradlew assembleDebug && cd ..
 
 ## Documentation Guide
 
+- 📚 **[`docs/README.md`](file:///home/thanhtuan/projects/tvlnc/docs/README.md)**: Master documentation index.
 - 🏗️ **[`docs/ARCHITECTURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/ARCHITECTURE.md)**: Native bridge design, lifecycle details, and config plugin mechanics.
+- 🎬 **[`docs/WIDGET_MEDIA_ROW_FEATURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/WIDGET_MEDIA_ROW_FEATURE.md)**: Specification for cinematic 16:9 media cards & customizer panel.
 - 📖 **[`docs/RUNBOOK.md`](file:///home/thanhtuan/projects/tvlnc/docs/RUNBOOK.md)**: Hardware setup and repeatable 1-command deployment guide.
 - 🛠️ **[`docs/TROUBLESHOOTING.md`](file:///home/thanhtuan/projects/tvlnc/docs/TROUBLESHOOTING.md)**: Diagnostic commands, logcat tips, and common issue resolution.
 - 📹 **[`docs/TAPO_CAMERA_LIVE_VIEW_FEATURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/TAPO_CAMERA_LIVE_VIEW_FEATURE.md)**: Technical breakdown of Tapo camera live stream dispatching.

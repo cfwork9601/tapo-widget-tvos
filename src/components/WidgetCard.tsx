@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -33,6 +33,7 @@ export interface WidgetCardProps {
   height?: number;
   isInstalled?: boolean;
   triggerWidgetClick?: boolean;
+  triggerClickToken?: number;
   onPress?: () => void;
   onLongPress?: () => void;
   onOptions?: () => void;
@@ -52,6 +53,7 @@ export default function WidgetCard({
   height = 380,
   isInstalled = true,
   triggerWidgetClick = true,
+  triggerClickToken,
   onPress,
   onLongPress,
   onOptions,
@@ -67,6 +69,15 @@ export default function WidgetCard({
   const [isOpenAppFocused, setIsOpenAppFocused] = useState<boolean>(false);
   const [clickToken, setClickToken] = useState<number>(0);
 
+  React.useEffect(() => {
+    if (typeof triggerClickToken === 'number' && triggerClickToken > 0) {
+      setClickToken((prev) => prev + 1);
+    }
+  }, [triggerClickToken]);
+
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressHandledRef = useRef<boolean>(false);
+
   const displayTitle = customLabel || label || packageName;
   const hasValidId = typeof appWidgetId === 'number' && appWidgetId > 0;
 
@@ -77,6 +88,39 @@ export default function WidgetCard({
     if (onPress) {
       onPress();
     }
+  };
+
+  const startLongPressTimer = () => {
+    if (longPressTimerRef.current) return;
+    isLongPressHandledRef.current = false;
+    if (onLongPress) {
+      longPressTimerRef.current = setTimeout(() => {
+        isLongPressHandledRef.current = true;
+        onLongPress();
+      }, 400);
+    }
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleKeyPress = (e: any) => {
+    const key = e.nativeEvent?.key;
+    if (key === 'Select' || key === 'Enter' || key === 'space' || key === '23' || key === '66') {
+      startLongPressTimer();
+    }
+  };
+
+  const handlePress = () => {
+    if (isLongPressHandledRef.current) {
+      isLongPressHandledRef.current = false;
+      return;
+    }
+    handleCardPress();
   };
 
   // State 1: Provider application is not installed on device
@@ -260,8 +304,12 @@ export default function WidgetCard({
         focusable={true}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        onPress={handleCardPress}
+        onPressIn={startLongPressTimer}
+        onPressOut={clearLongPressTimer}
+        {...({ onKeyPress: handleKeyPress } as any)}
+        onPress={handlePress}
         onLongPress={onLongPress}
+        delayLongPress={400}
         style={styles.cardBody}
       >
         <NativeAppWidgetView

@@ -2,6 +2,7 @@
   "expo": {
     "name": "Tapo Widget Hub",
     "slug": "tapo-widget-hub",
+    "scheme": "widget-hub",
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",

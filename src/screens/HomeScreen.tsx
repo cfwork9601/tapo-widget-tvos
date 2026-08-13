@@ -10,6 +10,7 @@ import {
   Pressable,
   useWindowDimensions,
   TextInput,
+  Linking,
 } from 'react-native';
 import WidgetCard from '../components/WidgetCard';
 import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
@@ -35,6 +36,7 @@ interface ActiveWidget {
   width?: number;
   height?: number;
   clickAction?: WidgetClickAction;
+  triggerClickToken?: number;
 }
 
 interface WidgetActionOption {
@@ -202,6 +204,60 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
+  // Voice action / Deep Link listener (e.g. widget-hub://live?name=front or widget-hub://show?widget=front)
+  useEffect(() => {
+    if (activeWidgets.length === 0) return;
+
+    const processDeepLink = (url: string | null) => {
+      if (!url) return;
+      try {
+        const queryIndex = url.indexOf('?');
+        let queryParams = '';
+        let pathname = url;
+        if (queryIndex !== -1) {
+          queryParams = url.substring(queryIndex + 1);
+          pathname = url.substring(0, queryIndex);
+        }
+
+        let searchTerm = '';
+        if (queryParams) {
+          const pairs = queryParams.split('&');
+          for (const pair of pairs) {
+            const [k, v] = pair.split('=');
+            if (k === 'name' || k === 'widget' || k === 'query' || k === 'camera') {
+              searchTerm = decodeURIComponent(v || '').toLowerCase();
+              break;
+            }
+          }
+        }
+
+        if (!searchTerm) {
+          const lastSegment = pathname.split('/').pop();
+          if (lastSegment && lastSegment !== 'live' && lastSegment !== 'show' && lastSegment !== 'camera') {
+            searchTerm = decodeURIComponent(lastSegment).toLowerCase();
+          }
+        }
+
+        if (!searchTerm) return;
+
+        const matched = activeWidgets.find((w) => {
+          const title = (w.customLabel || w.label || '').toLowerCase();
+          return title.includes(searchTerm) || searchTerm.includes(title);
+        });
+
+        if (matched) {
+          handleCardPress(matched);
+        }
+      } catch (err) {
+        console.warn('Failed to handle deep link:', url, err);
+      }
+    };
+
+    Linking.getInitialURL().then(processDeepLink);
+    const sub = Linking.addEventListener('url', (event) => processDeepLink(event.url));
+    return () => sub.remove();
+  }, [activeWidgets]);
+
   const persistWidgets = (widgets: ActiveWidget[]) => {
     setActiveWidgets(widgets);
     saveSetting('active_widgets', JSON.stringify(widgets));
@@ -218,8 +274,19 @@ export default function HomeScreen() {
   };
 
   const handleCardPress = (item: ActiveWidget) => {
-    if (getWidgetClickAction(item) === 'open_tapo_app') {
+    const action = getWidgetClickAction(item);
+    if (action === 'open_tapo_app') {
       launchApp(item.packageName);
+    } else if (action === 'none') {
+      // no-op
+    } else {
+      setActiveWidgets((prev) =>
+        prev.map((w) =>
+          w.instanceId === item.instanceId
+            ? { ...w, triggerClickToken: (w.triggerClickToken || 0) + 1 }
+            : w
+        )
+      );
     }
   };
 
@@ -413,6 +480,7 @@ export default function HomeScreen() {
                     height={cardHeight}
                     isInstalled={isInstalled}
                     triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
+                    triggerClickToken={item.triggerClickToken}
                     onPress={() => handleCardPress(item)}
                     onLongPress={() => handleCardLongPress(item)}
                     onOptions={() => handleCardLongPress(item)}
@@ -446,6 +514,7 @@ export default function HomeScreen() {
                     height={cardHeight}
                     isInstalled={isInstalled}
                     triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
+                    triggerClickToken={item.triggerClickToken}
                     onPress={() => handleCardPress(item)}
                     onLongPress={() => handleCardLongPress(item)}
                     onOptions={() => handleCardLongPress(item)}
