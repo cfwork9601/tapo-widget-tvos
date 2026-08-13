@@ -8,7 +8,8 @@ Welcome to the technical documentation repository for **Tapo Widget Hub (`com.wi
 
 ### 🏗️ 1. Core Architecture & Feature Specifications
 * **[`ARCHITECTURE.md`](./ARCHITECTURE.md)**: Native bridge design, lifecycle tracking (`AppWidgetHostManager`), ViewManager click dispatching, and Expo config plugin mechanics.
-* **[`WIDGET_MEDIA_ROW_FEATURE.md`](./WIDGET_MEDIA_ROW_FEATURE.md)**: Technical specification for the cinematic 16:9 widget media rows and slide-out side-sheet customization panel.
+* **[`CINEMATIC_WIDGET_MEDIA_ROW_RFC.md`](./CINEMATIC_WIDGET_MEDIA_ROW_RFC.md)**: Comprehensive architectural RFC for 16:9 widget media rows, touch interception, and slide-out side-sheet customization.
+* **[`WIDGET_MEDIA_ROW_FEATURE.md`](./WIDGET_MEDIA_ROW_FEATURE.md)**: Feature specification for the cinematic 16:9 widget media rows and slide-out side-sheet customization panel.
 * **[`TAPO_CAMERA_LIVE_VIEW_FEATURE.md`](./TAPO_CAMERA_LIVE_VIEW_FEATURE.md)**: In-depth technical breakdown of direct full-screen live view camera stream launching (`TapoPadVideoPlayV3Activity`) using DFS introspection & coordinate fallback math.
 
 ---
