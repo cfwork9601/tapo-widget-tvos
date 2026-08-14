@@ -101,14 +101,12 @@ Because external TV launchers (Monet, Google TV) run in separate sandboxed proce
 
 ---
 
-## 4. Complementary Strategy: System Channels vs In-App Media Row
+## 4. Key Principle: Zero Changes to Internal App UI
 
-| Feature Dimension | System Preview Channels (This Proposal) | In-App Cinematic Media Row ([`CINEMATIC_WIDGET_MEDIA_ROW_RFC.md`](./CINEMATIC_WIDGET_MEDIA_ROW_RFC.md)) |
-|---|---|---|
-| **Host Environment** | Third-party TV Launchers (Monet, Google TV, Projectivy). | `Tapo Widget Hub` (When running as the primary HOME launcher). |
-| **Data Protocol** | Android TV `TvContract.PreviewPrograms` & `androidx.tvprovider`. | Android `AppWidgetHost` & Native `RemoteViews` embedding. |
-| **Media Card Content** | High-resolution 16:9 snapshot images with deep links. | Real-time interactive smart home widgets (live feeds, interactive switches). |
-| **User Value** | Allows users who prefer Monet or Google TV to see Tapo cameras on their home screen. | Complete dedicated TV dashboard for active widget hosting and TV remote D-Pad controls. |
+Unlike previous approaches that attempted to alter the internal React Native dashboard layout:
+* **The App's Inside UI Remains Untouched**: The existing dashboard layout (`HomeScreen.tsx`), widget picker, card controls, and settings remain 100% unchanged.
+* **Pure System-Level Publishing**: `Tapo Widget Hub` operates as an Android TV Preview Channel provider in the background, publishing media cards to the Android TV system database (`TvProvider`).
+* **Home Launcher Visibility**: External launchers (Monet Launcher, Google TV, Projectivy) automatically ingest and display the `"Tapo Live Cameras"` row on the user's primary TV home screen alongside YouTube and Netflix recommendations.
 
 ---
 

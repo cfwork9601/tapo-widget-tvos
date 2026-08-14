@@ -96,12 +96,13 @@ cd android && ./gradlew assembleDebug && cd ..
 
 - 📚 **[`docs/README.md`](file:///home/thanhtuan/projects/tvlnc/docs/README.md)**: Master documentation index.
 - 🏗️ **[`docs/ARCHITECTURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/ARCHITECTURE.md)**: Native bridge design, lifecycle details, and config plugin mechanics.
-- 🎬 **[`docs/WIDGET_MEDIA_ROW_FEATURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/WIDGET_MEDIA_ROW_FEATURE.md)**: Specification for cinematic 16:9 media cards & customizer panel.
+- 📺 **[`docs/CHANNEL_PROPOSAL_PLAN.md`](file:///home/thanhtuan/projects/tvlnc/docs/CHANNEL_PROPOSAL_PLAN.md)**: Architectural proposal & roadmap for Android TV System Preview Channels (`androidx.tvprovider`).
+- 📋 **[`docs/PROJECT_AUDIT_AND_STATUS.md`](file:///home/thanhtuan/projects/tvlnc/docs/PROJECT_AUDIT_AND_STATUS.md)**: Comprehensive technical audit report (permissions, native bridge inventory, build/signing, device state, and readiness matrix).
 - 📖 **[`docs/RUNBOOK.md`](file:///home/thanhtuan/projects/tvlnc/docs/RUNBOOK.md)**: Hardware setup and repeatable 1-command deployment guide.
 - 🛠️ **[`docs/TROUBLESHOOTING.md`](file:///home/thanhtuan/projects/tvlnc/docs/TROUBLESHOOTING.md)**: Diagnostic commands, logcat tips, and common issue resolution.
 - 📹 **[`docs/TAPO_CAMERA_LIVE_VIEW_FEATURE.md`](file:///home/thanhtuan/projects/tvlnc/docs/TAPO_CAMERA_LIVE_VIEW_FEATURE.md)**: Technical breakdown of Tapo camera live stream dispatching.
 - 📝 **[`docs/agent.md`](file:///home/thanhtuan/projects/tvlnc/docs/agent.md)**: AI agent instructions & mandatory hard constraints.
-- 📋 **[`docs/implementation.md`](file:///home/thanhtuan/projects/tvlnc/docs/implementation.md)**: Historical sprint breakdown and roadmap.
+- 📋 **[`docs/implementation.md`](file:///home/thanhtuan/projects/tvlnc/docs/implementation.md)**: Historical sprint backlog and roadmap.
 - 🧭 **[`docs/TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md`](file:///home/thanhtuan/projects/tvlnc/docs/TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md)**: Current phased plan for full installed-Tapo-widget coverage.
 - 📍 **[`docs/DEVELOPMENT_LOG.md`](file:///home/thanhtuan/projects/tvlnc/docs/DEVELOPMENT_LOG.md)**: Current branch status, validation evidence, and the next resume point for future sessions.
 
