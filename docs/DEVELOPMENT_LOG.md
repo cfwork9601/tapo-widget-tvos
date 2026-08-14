@@ -5,10 +5,10 @@
 
 ## Resume Here
 
-**Current implementation phase:** Phase 3 complete; **Cinematic Widget Media Row & Customizer Panel** specification drafted in [WIDGET_MEDIA_ROW_FEATURE.md](./WIDGET_MEDIA_ROW_FEATURE.md).
-**Next required action:** Implement `WidgetMediaCard.tsx` (16:9 widescreen card layout), horizontal scrolling media row in `HomeScreen.tsx`, and slide-out side-sheet customization panel.
+**Current implementation phase:** **Android TV System Preview Channels Publisher (`androidx.tvprovider`)** and **Snapshot Content Provider (`com.widgetlauncher.snapshots`)** fully implemented, compiled, and verified on hardware.
+**Key Achievement:** Tapo Widget Hub exposes 16:9 media cards directly to the Android TV system so third-party launchers (like Monet Launcher and Google TV) display Tapo camera recommendations on the TV home screen, while leaving the internal app dashboard UI completely untouched.
 
-The implementation plan is [TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md) and [WIDGET_MEDIA_ROW_FEATURE.md](./WIDGET_MEDIA_ROW_FEATURE.md).
+The architecture plan is [CHANNEL_PROPOSAL_PLAN.md](./CHANNEL_PROPOSAL_PLAN.md).
 
 ## Current State
 

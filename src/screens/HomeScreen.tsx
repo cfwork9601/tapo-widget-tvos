@@ -21,6 +21,7 @@ import {
   saveSetting,
   allocateAppWidgetId,
   deleteAppWidgetId,
+  publishPreviewChannel,
   WidgetProviderInfo,
 } from '../services/WidgetProviderService';
 
@@ -256,6 +257,27 @@ export default function HomeScreen() {
     Linking.getInitialURL().then(processDeepLink);
     const sub = Linking.addEventListener('url', (event) => processDeepLink(event.url));
     return () => sub.remove();
+  }, [activeWidgets]);
+
+  // Synchronize Tapo camera preview channels to Android TV system (TvProvider)
+  useEffect(() => {
+    if (activeWidgets.length === 0) return;
+    const cameraWidgets = activeWidgets.filter((w) =>
+      (w.className || '').toLowerCase().includes('camera')
+    );
+    const targetWidgets = cameraWidgets.length > 0 ? cameraWidgets : activeWidgets;
+
+    const payload = targetWidgets.map((w) => ({
+      id: w.instanceId,
+      name: w.customLabel || w.label,
+      description: (w.className || '').toLowerCase().includes('camera')
+        ? '1080p HD Live Stream'
+        : 'Smart Home Control',
+    }));
+
+    publishPreviewChannel(payload).catch((e) =>
+      console.warn('Background preview channel publication error:', e)
+    );
   }, [activeWidgets]);
 
   const persistWidgets = (widgets: ActiveWidget[]) => {
