@@ -1,6 +1,7 @@
 # Development Log — Tapo Dashboard
 
 **Branch:** `feature/widget-launcher-hardening`  
+**Milestone Tag / Revert Point:** `version_2_channel_card_fined` (commit `47fc9a1`)  
 **Purpose:** The authoritative handoff record for active development on this branch. Update this file at the end of every meaningful implementation or device-testing session.  
 **Active Conversation ID:** [`2c8fa0a7-79f9-4772-9b89-4dee1087b906`](conversation://2c8fa0a7-79f9-4772-9b89-4dee1087b906) (`/home/thanhtuan/.gemini/antigravity-cli/brain/2c8fa0a7-79f9-4772-9b89-4dee1087b906`)
 
