@@ -75,10 +75,9 @@
 | 2026-08-11 | Phase 3 Card States & Recovery | Pass | Implemented dedicated card header bar (title, ⚙ options, ✕ delete), fallback cards for uninstalled/bind-failed states, widget renaming presets, and retry binding recovery flow. Tested and verified on live TV box (`192.168.1.67:5555`). |
 | 2026-08-14 | Snapshot & Channel Hardening | Pass | TypeScript check (`npx tsc --noEmit`) and Kotlin compilation (`./gradlew :app:compileDebugKotlin`) passed with 0 errors. |
 | 2026-08-14 | Live TV Preview Channel Test | Pass | Deployed to Onn 4K Pro (`192.168.1.67:5555`). Verified `Tapo Widget Hub` channel renders live 16:9 snapshots with real device names (`Broilers_Farm_1` & `EggF_Front`) directly on TV launcher home screen above YouTube. |
-| 2026-08-14 | Deep Link Guard Verification | Pass | Verified on TV box that normal app launches open cleanly into dashboard with focus on `+ Add Tapo Widget`, allowing full D-Pad navigation without auto-opening camera feeds. |
-| 2026-08-14 | Native Device Configure Flow | Pass | Implemented `startAppWidgetConfigureActivityForResult` in `AppWidgetModule.kt` and wired into `addWidget` and card options modal ("🎯 Select / Change Camera Device"). |
-| 2026-08-14 | Touch Passthrough Restored | Pass | Verified on TV box that Tapo widget views freely receive touch events and PendingIntents matching `main` branch behavior. |
-| 2026-08-14 | Auto Snapshot Refresh Sync | Pass | Verified on TV box that newly configured camera cards (`EggF_House1`, `Broilers_Farm_1`, `EggF_Front`) automatically sync fresh snapshots to the TV launcher home screen upon frame update and app resume. |
+| 2026-08-14 | 1:1 Widget Timestamp Parsing | Pass | Verified `findLastViewTimestamp()` extracts `"Last view at HH:mm"` from sibling TextViews directly in live widget hierarchies, perfectly matching widget timestamps (`Broilers_Farm_1: 11:55`, `EggF_Front: 09:26`, `EggF_House1: 11:57`). |
+| 2026-08-14 | Direct Live Stream Launching | Pass | Verified clicking preview cards executes `widget-hub://live?name=...` to dispatch native RemoteViews clicks, opening `TapoPadVideoPlayV3Activity` full-screen live feed instantly without permission denial. |
+| 2026-08-14 | Milestone Tagging | Pass | Created and pushed git tag and branch `version_2_channel_card_fined` at commit `47fc9a1`. |
 
 ## Important Decisions
 
@@ -88,18 +87,8 @@
 4. Add an action choice only after it is verified for a specific provider class and device/Tapo-app version.
 5. Keep **Open Tapo app** and **No action** as safe fallbacks for every widget card.
 6. `plugins/widgethost/` is authoritative for native bridge sources. The Expo plugin copies those files into the generated `android/.../widgethost/` location during prebuild.
-
-## Validation Record
-
-| Date | Check | Result | Notes |
-| --- | --- | --- | --- |
-| 2026-08-11 | TypeScript | Pass | `npx tsc --noEmit` completed successfully after adding `TapoProviderPickerModal`. |
-| 2026-08-11 | Kotlin compile after lifecycle changes | Pass | `./gradlew :app:compileDebugKotlin --console=plain --quiet` completed successfully after Expo prebuild. |
-| 2026-08-11 | Android TV provider registry | Pass | Onn 4K Pro / Android 14 / Tapo 3.20.154 reports 13 Tapo widget providers; two camera widgets are bound to TV Launcher. See `TAPO_PROVIDER_INVENTORY.md`. |
-| 2026-08-11 | Package rename & Kotlin build | Pass | `npx expo prebuild --clean`, `./gradlew :app:compileDebugKotlin`, and `npx tsc --noEmit` passed with 0 errors for `com.widgetlauncher`. |
-| 2026-08-11 | Per-provider mount/render test | Pass | Deployed build to Onn 4K Pro (`192.168.1.67:5555`). Opened `TapoProviderPickerModal`, verified 13 providers detected, successfully mounted & rendered Camera (2 live feeds), Smart Plug, and Bulb widgets simultaneously in 2, 3, and 4-column layouts. |
-| 2026-08-11 | Phase 3 Card States & Recovery | Pass | Implemented dedicated card header bar (title, ⚙ options, ✕ delete), fallback cards for uninstalled/bind-failed states, widget renaming presets, and retry binding recovery flow. Tested and verified on live TV box (`192.168.1.67:5555`). |
-| 2026-08-14 | Snapshot & Channel Hardening | Pass | TypeScript check (`npx tsc --noEmit`) and Kotlin compilation (`./gradlew :app:compileDebugKotlin`) passed with 0 errors. |
+7. System Preview Channels are published to `androidx.tvprovider` without modifying the in-app React Native UI (`HomeScreen.tsx`).
+8. Preview channel card click intents must route through `widget-hub://live?name=...` to allow Android `RemoteViews` to execute Tapo's internal signed `PendingIntent` for unexported activities.
 
 ## Update Rules
 
