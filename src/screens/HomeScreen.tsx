@@ -64,7 +64,16 @@ const WIDGET_ACTION_OPTIONS: WidgetActionOption[] = [
   },
 ];
 
+const ACTUAL_TAPO_CAMERA_NAMES = [
+  'Broilers_Farm_1',
+  'EggF_Front',
+  'EggF_House1',
+];
+
 const QUICK_RENAME_PRESETS = [
+  'Broilers_Farm_1',
+  'EggF_Front',
+  'EggF_House1',
   'Front Yard Camera',
   'Backyard Camera',
   'Driveway Camera',
@@ -156,11 +165,19 @@ export default function HomeScreen() {
             if (Array.isArray(parsed) && parsed.length > 0) {
               const capped = parsed.slice(0, 20);
               let updated = false;
+              let camIdx = 0;
               for (const item of capped) {
                 if (!isWidgetClickAction(item.clickAction)) {
                   item.clickAction = 'widget_primary';
                   updated = true;
                 }
+                if (!item.customLabel || item.customLabel.startsWith('Camera #') || item.customLabel === 'Front Yard Camera' || item.customLabel === 'Camera') {
+                  if (camIdx < ACTUAL_TAPO_CAMERA_NAMES.length) {
+                    item.customLabel = ACTUAL_TAPO_CAMERA_NAMES[camIdx];
+                    updated = true;
+                  }
+                }
+                camIdx++;
                 if (!item.appWidgetId || item.appWidgetId <= 0) {
                   const allocatedId = await allocateAppWidgetId();
                   if (allocatedId > 0) {

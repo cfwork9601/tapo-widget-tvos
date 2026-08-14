@@ -62,9 +62,7 @@ object TapoPreviewChannelManager {
 
       for (cam in cameras) {
         val snapshotFile = SnapshotContentProvider.getSnapshotFile(context, cam.id)
-        if (!snapshotFile.exists() || snapshotFile.length() == 0L) {
-          generatePlaceholderSnapshot(snapshotFile, cam.name)
-        }
+        generatePlaceholderSnapshot(snapshotFile, cam.name)
 
         val posterUri = SnapshotContentProvider.getSnapshotUri(cam.id)
         val intentUri = createCameraLaunchIntentUri(cam.name)
