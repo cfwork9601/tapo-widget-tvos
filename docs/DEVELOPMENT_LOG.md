@@ -6,10 +6,11 @@
 
 ## Resume Here
 
-**Current implementation phase:** **Android TV System Preview Channels & Live Widget Snapshot Sync** fully verified on hardware.
+**Current implementation phase:** **1:1 Widget Timestamp Extraction & Android TV System Preview Channels** fully verified on hardware.
 - **Active Architecture Specification**: [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
 - **Key Achievement**:
-  - Live Tapo camera snapshots (`Broilers_Farm_1` and `EggF_Front`) are captured directly from live widgets and displayed crisp in 16:9 on the TV launcher home screen above YouTube.
+  - Live Tapo camera snapshots (`Broilers_Farm_1`, `EggF_Front`, `EggF_House1`) are captured directly from live widgets.
+  - Native widget hierarchy parser extracts exact `"Last view at HH:mm"` strings directly from Tapo's internal widget TextViews and burns them onto the snapshot pill badge, guaranteeing 100% synchronization between in-app widgets and TV launcher channel cards.
   - Channel name and real device names are synced and verified.
   - Card click action launches direct live video stream (`TapoPadVideoPlayV3Activity`).
   - The internal React Native app UI remains clean and unmodified.
@@ -25,9 +26,10 @@
 | --- | --- | --- |
 | Android TV HOME launcher | Implemented | Package `com.widgetlauncher`. Manifest/plugin declares `HOME`, `DEFAULT`, and `LEANBACK_LAUNCHER`. |
 | Native AppWidget host | Implemented & Verified | Kotlin bridge hosts Android `AppWidget` views in React Native under `com.widgetlauncher.widgethost`. |
-| Tapo provider inventory | Verified in live testing | 13 providers enumerated on target device; verified live mount/render of Camera (2 live feeds), Smart Plug, and Bulb widgets. |
-| System Preview Channels | Verified on TV Box | `TapoPreviewChannelManager.kt` publishes `"Tapo Live Cameras"` channel with real names (`Broilers_Farm_1`, `EggF_Front`) on launcher home screen. |
+| Tapo provider inventory | Verified in live testing | 13 providers enumerated on target device; verified live mount/render of Camera (3 live feeds), Smart Plug, and Bulb widgets. |
+| System Preview Channels | Verified on TV Box | `TapoPreviewChannelManager.kt` publishes `"Tapo Live Cameras"` channel with real names (`Broilers_Farm_1`, `EggF_Front`, `EggF_House1`) on launcher home screen. |
 | Live Snapshot Serving | Verified on TV Box | `SnapshotContentProvider.kt` serves live 16:9 JPEG snapshots with cache-busting timestamps; verified live captures rendering on launcher. |
+| 1:1 Widget Timestamp Sync | Verified on TV Box | Direct Tapo `TextView` extraction formats `"Last view at [time]"` on cards, matching in-app widget timestamps 1:1. |
 | Per-widget click actions | Verified | Card click action launches `TapoPadVideoPlayV3Activity` full-screen live feed. |
 | Host lifecycle | Implemented | `MainActivity.onResume()` starts widget listening and `onPause()` stops it; the Expo plugin reproduces this after prebuild. |
 | Automated checks | Passing | `npx tsc --noEmit` & Kotlin compile pass with 0 errors. |
@@ -56,6 +58,7 @@
 | `67a85ae` | Switched to actual TP-Link Tapo camera names and live widget snapshot captures. |
 | `3687f43` | Cleaned custom names across entire app to use real Tapo device names and live snapshots. |
 | `dc49098` | Hardened live camera snapshots, Monet Launcher support, AppState/widget frame sync, native device configure activity, and touch passthrough. |
+| Working copy | Extracted direct Tapo widget TextView timestamps (`findLastViewTimestamp`) and rendered 1:1 synchronized `"Last view at [time]"` badges on launcher snapshot cards. |
 
 ## Validation Record
 

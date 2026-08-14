@@ -13,6 +13,9 @@ import androidx.tvprovider.media.tv.PreviewChannelHelper
 import androidx.tvprovider.media.tv.PreviewProgram
 import androidx.tvprovider.media.tv.TvContractCompat
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object TapoPreviewChannelManager {
 
@@ -45,10 +48,14 @@ object TapoPreviewChannelManager {
       }
     }
 
+    val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+    val now = System.currentTimeMillis()
+    val initialSubtitle = "Updated at ${timeFormat.format(Date(now))}"
+
     if (existingChannel == null) {
       val logo = createDefaultChannelLogo()
       val channelBuilder = PreviewChannel.Builder()
-        .setDisplayName("Tapo Live Cameras")
+        .setDisplayName(initialSubtitle)
         .setDescription("Live security camera previews from TP-Link Tapo")
         .setAppLinkIntentUri(Uri.parse("widget-hub://"))
         .setLogo(logo)
@@ -62,6 +69,17 @@ object TapoPreviewChannelManager {
       } catch (e: Exception) {
         e.printStackTrace()
       }
+    } else {
+      // Update channel display name to latest update time
+      val channelValues = ContentValues().apply {
+        put(TvContractCompat.Channels.COLUMN_DISPLAY_NAME, initialSubtitle)
+      }
+      context.contentResolver.update(
+        TvContractCompat.buildChannelUri(channelId),
+        channelValues,
+        null,
+        null
+      )
     }
 
     // Update programs inside the channel
@@ -75,9 +93,10 @@ object TapoPreviewChannelManager {
           SnapshotContentProvider.generateDefaultSnapshot(snapshotFile, cam.name)
         }
 
-        val lastMod = if (snapshotFile.exists()) snapshotFile.lastModified() else System.currentTimeMillis()
-        val posterUri = SnapshotContentProvider.getSnapshotUri(cam.id, lastMod)
+        val now = System.currentTimeMillis()
+        val posterUri = SnapshotContentProvider.getSnapshotUri(cam.id, now)
         val intentUri = createCameraLaunchIntentUri(cam.name)
+        val updatedText = "Updated at ${timeFormat.format(Date(now))}"
 
         // Grant URI read permissions broadly to TV launchers
         grantUriToLaunchers(context, posterUri)
@@ -87,7 +106,8 @@ object TapoPreviewChannelManager {
           .setContentId(cam.id)
           .setInternalProviderId(cam.id)
           .setTitle(cam.name)
-          .setDescription(cam.description.ifEmpty { "1080p HD Live Stream" })
+          .setAuthor(updatedText)
+          .setDescription(updatedText)
           .setPosterArtUri(posterUri)
           .setPosterArtAspectRatio(TvContractCompat.PreviewPrograms.ASPECT_RATIO_16_9)
           .setThumbnailUri(posterUri)
@@ -100,8 +120,9 @@ object TapoPreviewChannelManager {
         helper.publishPreviewProgram(program)
       }
 
-      // Notify system database of fresh programs
+      // Notify system database of fresh programs and channel
       context.contentResolver.notifyChange(TvContractCompat.PreviewPrograms.CONTENT_URI, null)
+      context.contentResolver.notifyChange(TvContractCompat.Channels.CONTENT_URI, null)
     } catch (e: Exception) {
       e.printStackTrace()
     }
@@ -118,8 +139,10 @@ object TapoPreviewChannelManager {
       val snapshotFile = SnapshotContentProvider.getSnapshotFile(context, cameraId)
       if (!snapshotFile.exists() || snapshotFile.length() == 0L) return
 
-      val lastMod = snapshotFile.lastModified()
-      val posterUri = SnapshotContentProvider.getSnapshotUri(cameraId, lastMod)
+      val now = System.currentTimeMillis()
+      val posterUri = SnapshotContentProvider.getSnapshotUri(cameraId, now)
+      val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+      val updatedText = "Updated at ${timeFormat.format(Date(now))}"
 
       grantUriToLaunchers(context, posterUri)
 
@@ -127,6 +150,9 @@ object TapoPreviewChannelManager {
       val values = ContentValues().apply {
         put(TvContractCompat.PreviewPrograms.COLUMN_POSTER_ART_URI, posterUri.toString())
         put(TvContractCompat.PreviewPrograms.COLUMN_THUMBNAIL_URI, posterUri.toString())
+        put(TvContractCompat.PreviewPrograms.COLUMN_SHORT_DESCRIPTION, updatedText)
+        put(TvContractCompat.PreviewPrograms.COLUMN_LONG_DESCRIPTION, updatedText)
+        put(TvContractCompat.PreviewPrograms.COLUMN_AUTHOR, updatedText)
         if (!cameraName.isNullOrEmpty()) {
           put(TvContractCompat.PreviewPrograms.COLUMN_TITLE, cameraName)
         }
@@ -139,8 +165,9 @@ object TapoPreviewChannelManager {
         arrayOf(channelId.toString(), cameraId, cameraId)
       )
 
-      // 2. Notify database observers (Monet Launcher, Google TV) that preview programs updated
+      // 3. Notify database observers (Monet Launcher, Google TV) that preview programs & channel updated
       context.contentResolver.notifyChange(TvContractCompat.PreviewPrograms.CONTENT_URI, null)
+      context.contentResolver.notifyChange(TvContractCompat.Channels.CONTENT_URI, null)
       context.contentResolver.notifyChange(posterUri, null)
     } catch (e: Exception) {
       e.printStackTrace()
