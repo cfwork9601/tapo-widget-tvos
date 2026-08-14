@@ -1,186 +1,133 @@
-# RFC: Cinematic 16:9 Widget Media Row & Side-Sheet Customizer Architecture
+# RFC: Tapo TV Widget Launcher — Cinematic Media Card Rows (Monet-Style)
 
-**Status**: Proposed Architecture & Technical Design  
-**Target Platform**: Android TV (API 34 / Android 14, Onn 4K Streaming Box Pro)  
+**Feature**: Android TV Widget-as-Media-Card Architecture  
+**Target Platform**: Android TV / Google TV (API 34 / Android 14, Onn 4K Pro / Streaming Devices)  
 **Package**: `com.widgetlauncher` (`Tapo Widget Hub`)  
+**Status**: Authoritative Architectural RFC & Feature Design  
 **Author**: Engineering Team  
 **Date**: August 2026  
-**Intended Audience**: Systems Engineers, TV UI Architects, React Native & Native Android Bridge Developers  
 
 ---
 
-## 1. Executive Summary & Problem Statement
+## 1. Executive Summary & Root Motivation
 
-### 1.1 Context & Current Baseline State
-`Tapo Widget Hub` is a custom Android TV home launcher built with **React Native 0.86** and **Expo SDK 57 (Custom Dev Client)**, backed by a native Kotlin bridge (`AppWidgetHostManager`, `AppWidgetViewManager`, `AppWidgetModule`). It hosts live Android `AppWidget` instances directly on the TV home screen without user-facing permission dialogs by utilizing pre-granted silent binding (`appwidget grantbind`).
+### 1.1 The Android TV Platform Limitation
+On standard Android mobile and tablet devices, Android `AppWidget` is a primary user interface paradigm. However, **Android TV OS and Google TV intentionally hide, suppress, and disable the native AppWidget system**:
+* Android TV provides no widget workspace, no widget picker, and no home screen widget hosting.
+* As a result, smart home ecosystems like **TP-Link Tapo (`com.tplink.iot`)**—which bundle rich Android widgets for live camera previews, smart plug toggles, bulb dimmers, and sensors—are completely inaccessible on television screens.
 
-In the current implementation:
-* Widgets are rendered inside basic grid cards ([`src/components/WidgetCard.tsx`](file:///home/thanhtuan/projects/tvlnc/src/components/WidgetCard.tsx)) arranged in a vertical wrapping grid or simple slider on [`src/screens/HomeScreen.tsx`](file:///home/thanhtuan/projects/tvlnc/src/screens/HomeScreen.tsx).
-* Selecting a Tapo camera widget triggers a native MotionEvent dispatch and depth-first search (DFS) view-tree introspection that bypasses Android's unexported `SecurityException` (`exported="false"` on `WidgetClickActivity`), launching **`TapoPadVideoPlayV3Activity` (Full-Screen Live Camera Stream)** directly.
-* The device currently has 13 cataloged Tapo widget providers (Cameras, Smart Plugs, Smart Bulbs, Sensors, Radiator Valves, Vacuum Cleaners), with live camera feeds, plugs, and bulbs verified on hardware.
+### 1.2 The Core Purpose of Tapo Widget Hub
+`Tapo Widget Hub` is a dedicated Android TV Launcher built to restore widget capability to Android TV devices. By running as a custom Leanback `HOME` launcher, it hosts live Android `AppWidget` instances natively using a Kotlin `AppWidgetHost` bridge with silent binding (`appwidget grantbind`).
 
-### 1.2 The Problem
-While functionally capable, the current interface has several user-experience and visual limitations:
-1. **Generic Dashboard Feel**: The current UI resembles a standard utility dashboard with thick header bars and uniform square cards, rather than a premium, cinematic 10-foot media launcher.
-2. **Lack of Cinematic 16:9 Presentation**: Modern Android TV interfaces (e.g. Google TV recommendations, Monet Launcher) use widescreen 16:9 media cards with edge-to-edge artwork and subtle bottom typographic gradients.
-3. **Cluttered Card Controls**: Current cards feature explicit header bars with title text, settings gears, and delete buttons attached to every card, causing visual noise on a television screen.
-4. **Rigid Settings UI**: Changing layout preferences currently relies on global top-toolbar buttons rather than contextual, slide-out configuration side-sheets.
+### 1.3 The Core Concept: Widgets as TV Media Cards
+Instead of displaying widgets inside a clumsy mobile-style grid or an isolated utility app, this feature **models Tapo widgets directly as First-Class Android TV Media Cards**, visually and behaviorally identical to **YouTube recommendation cards in modern TV launchers like Monet**:
+
+```
++─────────────────────────────────────────────────────────────────────────────────────────────────────────────+
+|  📺 Tapo Smart Home (Media Row Header)                                                                      |
+|                                                                                                             |
+|  +───────────────────────────+  +───────────────────────────+  +───────────────────────────+  +──────────+ |
+|  | [ LIVE CAMERA REMOTE-VIEW ]|  | [ LIVE CAMERA REMOTE-VIEW ]|  | [ SMART PLUG REMOTE-VIEW ]|  |    +     | |
+|  |                           |  |                           |  |                           |  |   Add    | |
+|  |                           |  |                           |  |                           |  |  Widget  | |
+|  | ───────────────────────── |  | ───────────────────────── |  | ───────────────────────── |  |   Card   | |
+|  | Front Yard Cam • LIVE     |  | Backyard Cam • LIVE       |  | Living Room Plug • ON     |  |          | |
+|  +───────────────────────────+  +───────────────────────────+  +───────────────────────────+  +──────────+ |
+|     16:9 Widescreen Card           16:9 Widescreen Card           16:9 Widescreen Card                      |
++─────────────────────────────────────────────────────────────────────────────────────────────────────────────+
+```
 
 ---
 
-## 2. Design Inspiration & Benchmark Analysis
+## 2. Interaction Parity: YouTube Media Card vs. Tapo Widget Card
 
-Modern TV media rows (as benchmarked from Android TV's `TvContract.PreviewPrograms` and Monet Launcher's UI) employ four core design tenets optimized for 10-foot viewing distances:
-
-```
-+---------------------------------------------------------------------------------------------------------------+
-|  📷 Tapo Smart Surveillance (Customizable Category Header)                                                   |
-|                                                                                                               |
-|  +-----------------------------+  +-----------------------------+  +-----------------------------+  +-------+ |
-|  | [ LIVE REMOTE-VIEWS FEED ]  |  | [ LIVE REMOTE-VIEWS FEED ]  |  | [ LIVE SMART PLUG FEED ]   |  |   +   | |
-|  |                             |  |                             |  |                             |  |  Add  | |
-|  |                             |  |                             |  |                             |  | Widget| |
-|  | ═══════════════════════════ |  | ═══════════════════════════ |  | ═══════════════════════════ |  | Tile  | |
-|  | Front Yard Cam • 1080p HD   |  | Backyard Cam • 1080p HD     |  | Living Room Plug • ACTIVE   |  |       | |
-|  +-----------------------------+  +-----------------------------+  +-----------------------------+  +-------+ |
-|     (Cinematic 16:9 Card)            (Cinematic 16:9 Card)            (Cinematic 16:9 Card)                   |
-+---------------------------------------------------------------------------------------------------------------+
-```
-
-1. **Widescreen 16:9 Form Factor**: Matches the native TV aspect ratio, making video snapshots and controls feel integrated into the media environment.
-2. **Edge-to-Edge Content Bleed**: Eliminates inner padding, embedding the live widget view seamlessly inside rounded glass containers (`borderRadius: 18`, `overflow: 'hidden'`).
-3. **Subtle Gradient Overlays**: Overlays device labels, status indicators, and live badges over a dark bottom gradient (`#000000D0` to `transparent`), with a toggleable **"Hide titles"** mode.
-4. **Slide-Out Side-Sheet Panel**: A right-aligned modal drawer that appears on long-press, providing dense, D-pad navigable controls (density, title toggles, renaming, click actions) without obscuring the background wallpaper.
+| Behavior | YouTube Media Row (Monet Launcher) | Tapo Widget Media Row (`Tapo Widget Hub`) |
+|---|---|---|
+| **Visual Form Factor** | 16:9 widescreen rounded cards (`borderRadius: 18`) with edge-to-edge artwork. | **16:9 widescreen rounded cards** embedding live `AppWidgetHostView` `RemoteViews`. |
+| **Primary Interaction (D-Pad Select / OK)** | Immediately launches full-screen video playback in YouTube. | **Immediately launches full-screen Live Camera Stream** (`TapoPadVideoPlayV3Activity`) or toggles plug state in-place. |
+| **Remote Focus Physics** | Focus scale `1.05x`, glowing accent border (`#38BDF8`), smooth D-Pad jumping. | **Focus scale `1.05x`**, glowing cyan ring, elevation, and seamless horizontal D-Pad traversal. |
+| **Title & Artwork Presentation** | Video title overlay with option to *"Hide titles"* for pure artwork. | **Device label overlay** with toggleable *"Hide titles"* mode for pure live camera viewports. |
+| **Row Configuration (Long Press)** | Right-aligned slide-out modal panel (density, displayed cards, renaming). | **Right-aligned slide-out modal drawer** (cards per row, title toggle, custom renaming, click actions). |
 
 ---
 
-## 3. Core Architectural Challenges & Technical Solutions
+## 3. End-to-End System Architecture
 
-### 3.1 Embedding Live Native AppWidgets in 16:9 Widescreen Containers
-Unlike static images used in video streaming apps, Android `AppWidget` layouts (`RemoteViews`) are declared by third-party packages with arbitrary minimum dimensions (e.g. `250dp x 180dp` for Tapo Camera, `180dp x 40dp` for Smart Plug).
+```mermaid
+flowchart TD
+    subgraph "External Smart Home Provider"
+        TapoApp["TP-Link Tapo App (com.tplink.iot)<br/>Declares CameraWidgetProvider, PlugWidget, BulbWidget"]
+    end
 
-#### Challenge:
-If an `AppWidgetHostView` is placed inside a 16:9 container, Android's internal `RemoteViews` layout rules can cause letterboxing, unwanted margins, or clipped text.
+    subgraph "Native Android Bridge Layer (Kotlin)"
+        HostManager["AppWidgetHostManager.kt<br/>Allocates AppWidget IDs & drives Activity lifecycle (onResume/onPause)"]
+        ViewManager["AppWidgetViewManager.kt<br/>Inflates AppWidgetHostView, intercepts touch & dispatches clickToken"]
+    end
 
-#### Solution:
-* **Container Math**:
-  $$\text{availableWidth} = \text{screenWidth} - (2 \times \text{horizontalPadding})$$
-  $$\text{cardWidth} = \frac{\text{availableWidth} - ((\text{cardsPerRow} - 1) \times \text{gap})}{\text{cardsPerRow}}$$
-  $$\text{cardHeight} = \text{cardWidth} \times \frac{9}{16}$$
-* **Native Scaling & Inset Normalization**:
-  In [`plugins/widgethost/AppWidgetViewManager.kt`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/AppWidgetViewManager.kt), configure `AppWidgetHostView` to remove default OS widget padding on API 34 (`setPadding(0, 0, 0, 0)`) and expand child `FrameLayout` layouts to fill `MATCH_PARENT`.
+    subgraph "React Native TV UI Layer (TypeScript)"
+        HomeScreen["HomeScreen.tsx<br/>Horizontal Media Row with D-Pad focus snapping"]
+        MediaCard["WidgetMediaCard.tsx<br/>16:9 Widescreen Glass Container & Gradient Overlay"]
+        SettingsModal["WidgetRowSettingsModal.tsx<br/>Slide-Out Side-Sheet (Monet-Style)"]
+    end
 
-### 3.2 Touch & Gesture Interception for TV D-Pad Remote
-Android `AppWidgetHostView` instances often contain internal click handlers and touch listeners created by third-party apps that consume `MotionEvent` events before React Native's `<Pressable>` can detect a long-press.
-
-#### Challenge:
-Standard TV remote Select button long-presses (held for 400ms) get swallowed by the inner Tapo widget `RemoteViews`, preventing the launcher from opening the configuration side-sheet.
-
-#### Solution:
-In [`plugins/widgethost/AppWidgetViewManager.kt`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/AppWidgetViewManager.kt):
-```kotlin
-class AppWidgetViewContainer(context: Context, private val hostManager: AppWidgetHostManager) : FrameLayout(context) {
-
-  // Intercept touch events so React Native Pressable receives gestures reliably
-  override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-    return true
-  }
-  
-  // ... clickToken DFS & MotionEvent dispatching ...
-}
+    TapoApp -->|"1. Generates RemoteViews (Snapshot / Controls)"| HostManager
+    HostManager -->|"2. Binds AppWidget ID silently (grantbind)"| ViewManager
+    ViewManager -->|"3. Embeds Native View into 16:9 Frame"| MediaCard
+    MediaCard -->|"4. Renders in Horizontal Row"| HomeScreen
+    HomeScreen -->|"5. Long-Press Select (400ms)"| SettingsModal
 ```
-In [`src/components/WidgetMediaCard.tsx`](file:///home/thanhtuan/projects/tvlnc/src/components/WidgetMediaCard.tsx):
-Implement TV D-Pad `onKeyPress` interceptor mapping `Select` / `Enter` / keycodes `23` / `66` with a `400ms` hold timer to trigger the slide-out customization panel, while short presses fire the standard click token.
-
-### 3.3 Re-Calibrating Coordinate Math for Direct Live Stream Launching
-When a camera tile is pressed, the launcher bypasses `SecurityException` by dispatching a synthetic touch down to `AppWidgetHostView`.
-
-#### Primary Strategy: Depth-First Search (DFS) Tree Introspection
-Traverse the inflated `AppWidgetHostView` view tree to locate the camera preview `ImageView` and invoke `performClick()`.
-
-#### Secondary Strategy: Fallback Coordinate Math
-If the snapshot container is wrapped inside an un-clickable layout, synthetic `MotionEvent` (DOWN + UP) is dispatched:
-* In standard 4:3 cards: target point was $(x = 50\%, y = 60\%)$.
-* In 16:9 widescreen cards: the camera viewport occupies $y \in [15\%, 85\%]$. Target point $(x = 50\%, y = 50\%)$ lands directly in the center of the live snapshot feed.
 
 ---
 
-## 4. Detailed Component Specifications
+## 4. Detailed Technical Implementation
+
+### 4.1 16:9 Aspect Ratio & Container Math (`WidgetMediaCard.tsx`)
+Unlike static image thumbnails, `AppWidget` layouts (`RemoteViews`) are flexible Android layouts. To render them as 16:9 widescreen media cards without distortion:
+
+1. **Dynamic TV Density Math**:
+   $$\text{availableWidth} = \text{screenWidth} - 2 \times \text{horizontalPadding}$$
+   $$\text{cardWidth} = \frac{\text{availableWidth} - (\text{cardsPerRow} - 1) \times \text{gap}}{\text{cardsPerRow}}$$
+   $$\text{cardHeight} = \text{cardWidth} \times \frac{9}{16}$$
+
+2. **Edge-to-Edge Clipping & Normalization**:
+   - Card container: `borderRadius: 18`, `overflow: 'hidden'`, `backgroundColor: '#121620'`.
+   - In native Kotlin, OS-level default widget padding is stripped (`setPadding(0, 0, 0, 0)`), ensuring the camera snapshot or plug button fills the 16:9 card edge-to-edge.
+
+3. **Bottom Gradient Typographic Overlay**:
+   - Linear gradient bar (`#000000D0` to `transparent`) at the bottom of the card.
+   - Displays device name (e.g. `Front Yard Camera`) and connection/state badge.
+   - Controlled by the user-configurable `hideTitles` flag.
+
+### 4.2 TV D-Pad Remote Navigation & Gesture Interception
+Android `AppWidgetHostView` instances can swallow motion and key events before React Native's `<Pressable>` registers gestures.
+
+1. **Touch Interception in Native Kotlin** ([`plugins/widgethost/AppWidgetViewManager.kt`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/AppWidgetViewManager.kt)):
+   ```kotlin
+   class AppWidgetViewContainer(context: Context, private val hostManager: AppWidgetHostManager) : FrameLayout(context) {
+     // Ensure touch & click events bubble up cleanly to React Native Pressable handlers
+     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean = true
+   }
+   ```
+
+2. **D-Pad Key Event Handling** ([`src/components/WidgetMediaCard.tsx`](file:///home/thanhtuan/projects/tvlnc/src/components/WidgetMediaCard.tsx)):
+   - **Short Press (Select / OK)**: Increments `clickToken` $\rightarrow$ Kotlin executes DFS tree introspection & coordinate touch dispatch $\rightarrow$ **Launches Full-Screen Camera Live View (`TapoPadVideoPlayV3Activity`)** or toggles smart plug.
+   - **Long Press (400ms Hold)**: Opens the **Slide-Out Media Row Customizer Drawer**.
+
+### 4.3 Slide-Out Customizer Side-Sheet (`WidgetRowSettingsModal.tsx`)
+A right-aligned slide-out modal panel inspired by Monet Launcher's YouTube row configuration:
 
 ```
-                     +---------------------------------------+
-                     |              HomeScreen               |
-                     |  - Horizontal Media Row ScrollView    |
-                     |  - D-Pad Focus Grid Coordinates       |
-                     +---------------------------------------+
-                                    |         |
-                  +-----------------+         +-----------------+
-                  |                                             |
-                  v                                             v
-     +--------------------------+                 +---------------------------+
-     |     WidgetMediaCard      |                 |   WidgetRowSettingsModal  |
-     | - 16:9 Glassmorphism Box |                 | - Right Slide-Out Drawer  |
-     | - Native AppWidgetView   |                 | - Cards Per Row (2/3/4)   |
-     | - Bottom Gradient Title  |                 | - Hide Titles Toggle      |
-     | - TV Focus Scale (1.05x) |                 | - Rename & Delete Actions |
-     +--------------------------+                 +---------------------------+
-                  |
-                  v
-     +--------------------------+
-     | Native Kotlin Bridge     |
-     | - AppWidgetViewManager   |
-     | - AppWidgetHostManager   |
-     +--------------------------+
-```
-
-### 4.1 `WidgetMediaCard.tsx`
-A focusable React Native component rendering an individual 16:9 widget tile:
-
-```typescript
-export interface WidgetMediaCardProps {
-  widget: ActiveWidget;
-  width: number;
-  height: number;
-  hideTitle: boolean;
-  hasTVPreferredFocus?: boolean;
-  onPress: () => void;
-  onLongPress: () => void;
-}
-```
-
-* **Visual States**:
-  * **Default**: `#121620` dark glass, `borderRadius: 18`, `borderWidth: 1.5`, `borderColor: '#1E293B'`.
-  * **Focused**: Smooth scale `1.05x`, `borderColor: '#38BDF8'`, `borderWidth: 3`, glowing cyan shadow.
-  * **Error / Unbound**: Fallback dark card with retry bind button and provider class label.
-* **Bottom Gradient Overlay**:
-  * Linear gradient positioned at bottom: `height: 60`, background `#000000D0` to `transparent`.
-  * Renders `widget.customLabel || widget.label` in `16sp` semi-bold white text.
-  * Hidden when `hideTitle === true`.
-
-### 4.2 `HomeScreen.tsx` Horizontal Media Row
-* **Layout**:
-  * A horizontal `ScrollView` (`horizontal={true}`, `showsHorizontalScrollIndicator={false}`).
-  * `rowHeader`: Category name (e.g. `📷 Tapo Surveillance`) with clean uppercase tracking.
-  * Inline `+ Add Widget` card at index `widgets.length`.
-* **D-Pad Focus Rules**:
-  * `Left` / `Right`: Traverses adjacent widget media cards smoothly.
-  * `Up`: Navigates to top header toolbar (`+ Add Tapo Widget`, `⚙ Settings`).
-  * `Down`: Navigates to secondary rows or bottom app drawer.
-
-### 4.3 `WidgetRowSettingsModal.tsx` (Slide-Out Customizer)
-A right-aligned slide-out modal modeled after Monet Launcher's configuration panel:
-
-```
-+-------------------------------------------------------------+
++─────────────────────────────────────────────────────────────+
 |                                    Tapo Surveillance        |
 |                                    Media row settings       |
 |                                                             |
 |  [📷] Row Visibility               (▲)  (▼)  [ (•) ON ]     |
-|       Display surveillance row                              |
+|       Show or hide this smart home row                      |
 |                                                             |
 |  [📺] Displayed cards                             4 cards > |
 |                                                             |
 |  [⊞] Media cards per row                        3 per row > |
+|      (2 per row, 3 per row, 4 per row)                      |
 |                                                             |
 |  [TT] Hide titles                                [ (•) ON ] |
 |       Show only artwork without text overlay                |
@@ -189,19 +136,18 @@ A right-aligned slide-out modal modeled after Monet Launcher's configuration pan
 |                                                             |
 |  [✎] Rename row                                           > |
 |                                                             |
-|  [⚙] Selected Card Click Action            Live Stream V3 > |
+|  [⚙] Card Click Action                     Live Stream V3 > |
+|      (Live View V3 | Open Tapo App | In-Place Toggle)       |
 |                                                             |
-|  [✕] Remove Widget Card                     Delete from TV  |
-+-------------------------------------------------------------+
+|  [✕] Delete Widget Card                     Delete from TV  |
++─────────────────────────────────────────────────────────────+
 ```
 
 ---
 
-## 5. Persistence Schema & Migration Strategy
+## 5. Persistence Data Model & SharedPreferences Schema
 
-All configuration parameters are stored in Android `SharedPreferences` under `widgetlauncher_prefs` via [`AppWidgetModule.saveSetting()`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/AppWidgetModule.kt).
-
-### 5.1 JSON Schema
+Configuration is persisted atomically in Android `SharedPreferences` under `widgetlauncher_prefs`:
 
 ```typescript
 export interface RowSettings {
@@ -222,46 +168,12 @@ export interface ActiveWidget {
 }
 ```
 
-### 5.2 Schema Migration
-When restoring state on startup:
-1. If `row_settings` does not exist, initialize with defaults:
-   `{ rowTitle: "Tapo Smart Home", showRowTitle: true, cardsPerRow: 3, hideTitles: false }`.
-2. Existing `active_widgets` array entries are preserved without breaking existing `appWidgetId` bindings.
-
 ---
 
-## 6. Performance, Thermal & Memory Budget
+## 6. Verification Checklist & Success Criteria
 
-Hosting multiple live `AppWidgetHostView` instances on streaming hardware (e.g. Onn 4K Pro with Amlogic S905X4 quad-core ARM Cortex-A55 @ 2.0 GHz, 3GB RAM):
-
-| Resource | Budget / Limit | Implementation Safeguard |
-|---|---|---|
-| **Resident RAM** | < 120 MB | Unmounted widget cards trigger immediate `AppWidgetHostManager.deleteAppWidgetId()` to prevent native memory leaks. |
-| **Activity Lifecycle** | 0% background CPU | `AppWidgetHost.startListening()` runs only in `onResume()`; `stopListening()` is invoked in `onPause()`. |
-| **GPU Overdraw** | < 2x overdraw | Hardware-accelerated views use `renderToHardwareTextureAndroid` with clipped bounds to prevent off-screen overdraw. |
-| **D-Pad Latency** | < 16ms frame time | Pure React memoization (`React.memo`) on `WidgetMediaCard` to prevent re-rendering unaffected cards during focus changes. |
-
----
-
-## 7. Expert Discussion Points & Edge Cases
-
-1. **Non-Camera Widget Form Factors**:
-   - Camera widgets have naturally square or 4:3 viewports that look good in 16:9 widescreen tiles.
-   - For narrow widgets (e.g. Smart Plug `180x40dp` or Sensor `40x40dp`), should the tile use center alignment with subtle ambient blur background, or stretch edge-to-edge?
-2. **Multi-Row Organization**:
-   - Should future iterations support multiple distinct rows (e.g. Row 1: *"Cameras"*, Row 2: *"Plugs & Lights"*, Row 3: *"Sensors"*)?
-3. **Dynamic Frame Rate Throttling**:
-   - When a camera tile is not focused, RemoteViews are updated by Tapo's standard broadcast interval. When focused, should the launcher offer an auto-refresh snapshot poll?
-
----
-
-## 8. Implementation Checklist
-
-- [ ] **Phase A: Component Foundation**:
-  - Implement [`src/components/WidgetMediaCard.tsx`](file:///home/thanhtuan/projects/tvlnc/src/components/WidgetMediaCard.tsx) with 16:9 aspect ratio math, glassmorphism styling, and bottom gradient overlay.
-- [ ] **Phase B: Customizer Side-Sheet**:
-  - Implement `src/components/WidgetRowSettingsModal.tsx` matching the Monet-style TV drawer.
-- [ ] **Phase C: HomeScreen Integration**:
-  - Replace vertical grid in [`src/screens/HomeScreen.tsx`](file:///home/thanhtuan/projects/tvlnc/src/screens/HomeScreen.tsx) with horizontal media row and header.
-- [ ] **Phase D: Hardware Verification on Target Device (`192.168.1.67:5555`)**:
-  - Verify D-pad focus scaling, Select key live view launching, long-press drawer opening, and title hiding.
+1. **TV Launcher Purpose**: The launcher boots directly into the Tapo smart home dashboard on HOME keypress, restoring the suppressed widget capabilities of Android TV.
+2. **Media Row Visuals**: Widgets render inside 16:9 widescreen glassmorphism tiles with clean focus borders (`#38BDF8`) and smooth D-Pad navigation.
+3. **One-Click Live Stream**: Pressing OK on a camera media card instantly launches `TapoPadVideoPlayV3Activity` full-screen.
+4. **Contextual Customization**: Long-pressing any card opens the Monet-style side sheet to toggle titles, adjust cards-per-row density (2, 3, 4), rename devices, or remove cards.
+5. **Native Lifecycle Safety**: Unmounting a widget card releases its native `appWidgetId` from `AppWidgetHostManager`, preventing memory leaks on streaming hardware.
