@@ -30,6 +30,7 @@ Welcome to the technical documentation repository for **Tapo Widget Hub (`com.wi
 ---
 
 ### 🚀 4. Deployment, Operations & Diagnostics
+* **[`PROJECT_AUDIT_AND_STATUS.md`](./PROJECT_AUDIT_AND_STATUS.md)**: Comprehensive technical audit report (permissions, native bridge inventory, build/signing, device state, and readiness matrix).
 * **[`RUNBOOK.md`](./RUNBOOK.md)**: Step-by-step device deployment, network ADB setup, and 1-command deployment script usage.
 * **[`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md)**: Diagnostic commands, logcat filtering, density tuning, and issue resolution.
 * **[`agent.md`](./agent.md)**: Hard constraints, coding rules, and development guidelines for coding agents.
