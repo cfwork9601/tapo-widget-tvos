@@ -1,0 +1,63 @@
+publish a Channel (TvContractCompat.Channels + PreviewPrograms) from inside your existing app, separate from any home-screen UI work. No HomeScreen.tsx changes needed at all — this is additive, one-time registration code.
+
+Key point that makes this easy: writing your own app's channel/program data needs no special permission — the READ_EPG_DATA blocker from earlier only applies to reading other apps' data. Publishing your own is wide open on your current non-rooted box.
+
+And "not a live widget" is exactly right — a channel card is just a static poster image + a deep link, not a rendered AppWidgetHostView. Whatever launcher is active (your own, or stock Google TV if you ever switch back) will pick it up and pin it to the home screen automatically.
+1. FileProvider setup (required — a private-storage file needs an authority to hand out a readable content:// URI):
+
+xml
+<!-- AndroidManifest.xml -->
+<provider
+    android:name="androidx.core.content.FileProvider"
+    android:authorities="com.widgetlauncher.fileprovider"
+    android:exported="false"
+    android:grantUriPermissions="true">
+    <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/file_paths" />
+</provider>
+xml
+<!-- res/xml/file_paths.xml -->
+<paths>
+    <files-path name="widget_snapshots" path="widget_snapshots/" />
+</paths>
+
+2. Capture the widget view to a bitmap and save it:
+
+kotlin
+fun captureWidgetSnapshot(context: Context, widgetView: View, widgetId: Int): Uri {
+    val bitmap = Bitmap.createBitmap(widgetView.width, widgetView.height, Bitmap.Config.ARGB_8888)
+    Canvas(bitmap).also { widgetView.draw(it) }
+
+    val dir = File(context.filesDir, "widget_snapshots").apply { mkdirs() }
+    val file = File(dir, "widget_$widgetId.png")
+    FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+
+    val uri = FileProvider.getUriForFile(context, "com.widgetlauncher.fileprovider", file)
+
+    // Whichever app renders posterArtUri needs read access — grant it explicitly.
+    // Your own package always needs it; add the stock launcher too in case you 
+    // ever switch off your custom one.
+    context.grantUriPermission(context.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.grantUriPermission("com.google.android.tvlauncher", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+    return uri
+}
+
+3. Refreshing over time: since these are live feeds, a one-time snapshot goes stale. Two options:
+
+Hook into whatever update signal you already get from the AppWidgetHost listener (widget content-changed callback) and re-capture + re-publish right then, or
+Periodic refresh via WorkManager (e.g. every few minutes) if the widgets don't reliably fire update callbacks.
+
+Either way, don't insert() a new PreviewProgram each refresh — that'll pile up duplicate cards. Keep the row ID (or a stable internalProviderId you set when first inserting) and update() in place:
+
+kotlin
+fun refreshWidgetCardPoster(context: Context, programId: Long, newPosterUri: Uri) {
+    val values = ContentValues().apply {
+        put(TvContractCompat.PreviewPrograms.COLUMN_POSTER_ART_URI, newPosterUri.toString())
+    }
+    val uri = TvContractCompat.buildPreviewProgramUri(programId)
+    context.contentResolver.update(uri, values, null, null)
+}
+
+Store the returned program ID from your original insert() call (parse it with ContentUris.parseId()) alongside each widget's config so you know which row to update on refresh.
