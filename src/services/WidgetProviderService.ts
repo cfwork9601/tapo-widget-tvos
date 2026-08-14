@@ -116,6 +116,7 @@ export interface PreviewCameraPayload {
   id: string;
   name: string;
   description?: string;
+  appWidgetId?: number;
 }
 
 export async function publishPreviewChannel(cameras: PreviewCameraPayload[]): Promise<number> {

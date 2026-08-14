@@ -58,7 +58,8 @@
 | `67a85ae` | Switched to actual TP-Link Tapo camera names and live widget snapshot captures. |
 | `3687f43` | Cleaned custom names across entire app to use real Tapo device names and live snapshots. |
 | `dc49098` | Hardened live camera snapshots, Monet Launcher support, AppState/widget frame sync, native device configure activity, and touch passthrough. |
-| Working copy | Extracted direct Tapo widget TextView timestamps (`findLastViewTimestamp`) and rendered 1:1 synchronized `"Last view at [time]"` badges on launcher snapshot cards. |
+| `fb99098` | Extracted direct Tapo widget TextView timestamps (`findLastViewTimestamp`) and rendered 1:1 synchronized `"Last view at [time]"` badges on launcher snapshot cards. |
+| Working copy | Implemented `CameraLauncherActivity` trampoline and `AppWidgetSnapshotCaptureHelper` to auto-capture updated widget snapshots and timestamps upon returning from full-screen live feeds. |
 
 ## Validation Record
 

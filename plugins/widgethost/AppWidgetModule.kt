@@ -149,7 +149,8 @@ class AppWidgetModule(private val reactContext: ReactApplicationContext) : React
         val id = map?.getString("id") ?: "cam_$i"
         val name = map?.getString("name") ?: "Tapo Camera"
         val desc = map?.getString("description") ?: ""
-        cameras.add(TapoPreviewChannelManager.CameraItem(id, name, desc))
+        val appWidgetId = if (map?.hasKey("appWidgetId") == true) map.getInt("appWidgetId") else -1
+        cameras.add(TapoPreviewChannelManager.CameraItem(id, name, desc, appWidgetId))
       }
 
       val channelId = TapoPreviewChannelManager.publishCamerasChannel(reactContext, cameras)

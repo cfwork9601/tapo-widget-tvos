@@ -99,6 +99,25 @@ module.exports = function withLauncherManifest(config) {
           },
         });
       }
+
+      // 5. Inject CameraLauncherActivity trampoline
+      if (!application.activity) {
+        application.activity = [];
+      }
+      const hasCameraLauncher = application.activity.some(
+        (act) => act.$?.['android:name'] === 'com.widgetlauncher.widgethost.CameraLauncherActivity'
+      );
+      if (!hasCameraLauncher) {
+        application.activity.push({
+          $: {
+            'android:name': 'com.widgetlauncher.widgethost.CameraLauncherActivity',
+            'android:exported': 'true',
+            'android:theme': '@android:style/Theme.Translucent.NoTitleBar',
+            'android:excludeFromRecents': 'true',
+            'android:taskAffinity': '',
+          },
+        });
+      }
     }
 
     return config;

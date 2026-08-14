@@ -295,6 +295,7 @@ export default function HomeScreen() {
         description: (w.className || '').toLowerCase().includes('camera')
           ? '1080p HD Live Stream'
           : 'Smart Home Control',
+        appWidgetId: w.appWidgetId,
       }));
 
       publishPreviewChannel(payload).catch((e) =>

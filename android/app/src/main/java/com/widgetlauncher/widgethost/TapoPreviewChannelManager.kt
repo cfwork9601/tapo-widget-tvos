@@ -1,5 +1,6 @@
 package com.widgetlauncher.widgethost
 
+import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -95,7 +96,7 @@ object TapoPreviewChannelManager {
 
         val now = System.currentTimeMillis()
         val posterUri = SnapshotContentProvider.getSnapshotUri(cam.id, now)
-        val intentUri = createCameraLaunchIntentUri(cam.name)
+        val intentUri = createCameraLaunchIntentUri(cam.id, cam.name, cam.appWidgetId)
         val updatedText = "Updated at ${timeFormat.format(Date(now))}"
 
         // Grant URI read permissions broadly to TV launchers
@@ -161,8 +162,8 @@ object TapoPreviewChannelManager {
       context.contentResolver.update(
         TvContractCompat.PreviewPrograms.CONTENT_URI,
         values,
-        "${TvContractCompat.PreviewPrograms.COLUMN_CHANNEL_ID} = ? AND (${TvContractCompat.PreviewPrograms.COLUMN_CONTENT_ID} = ? OR ${TvContractCompat.PreviewPrograms.COLUMN_INTERNAL_PROVIDER_ID} = ?)",
-        arrayOf(channelId.toString(), cameraId, cameraId)
+        "${TvContractCompat.PreviewPrograms.COLUMN_INTERNAL_PROVIDER_ID} = ?",
+        arrayOf(cameraId)
       )
 
       // 3. Notify database observers (Monet Launcher, Google TV) that preview programs & channel updated
@@ -175,17 +176,27 @@ object TapoPreviewChannelManager {
   }
 
   private fun grantUriToLaunchers(context: Context, uri: Uri) {
-    for (launcher in TV_LAUNCHERS) {
+    val launcherPackages = listOf(
+      "com.google.android.tvlauncher",
+      "com.google.android.apps.tv.launcherx",
+      "com.klevico.monet",
+      "com.spocky.projengmenu",
+      "com.amazon.firetv.launcher"
+    )
+    for (launcher in launcherPackages) {
       try {
         context.grantUriPermission(launcher, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
       } catch (ignored: Exception) {}
     }
   }
 
-  private fun createCameraLaunchIntentUri(cameraName: String): Uri {
+  private fun createCameraLaunchIntentUri(cameraId: String, cameraName: String, appWidgetId: Int): Uri {
+    val cleanName = cameraName.replace(Regex("[^a-zA-Z0-9_]"), "")
     val intent = Intent(Intent.ACTION_VIEW).apply {
-      data = Uri.parse("widget-hub://live?name=${Uri.encode(cameraName)}")
-      setPackage("com.widgetlauncher")
+      component = ComponentName("com.widgetlauncher", "com.widgetlauncher.widgethost.CameraLauncherActivity")
+      putExtra(CameraLauncherActivity.EXTRA_CAMERA_ID, cameraId)
+      putExtra(CameraLauncherActivity.EXTRA_CAMERA_NAME, cleanName)
+      putExtra(CameraLauncherActivity.EXTRA_APP_WIDGET_ID, appWidgetId)
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     return Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME))
@@ -212,6 +223,7 @@ object TapoPreviewChannelManager {
   data class CameraItem(
     val id: String,
     val name: String,
-    val description: String = ""
+    val description: String = "",
+    val appWidgetId: Int = -1
   )
 }
