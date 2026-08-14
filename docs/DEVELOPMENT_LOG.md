@@ -55,11 +55,7 @@
 | `a162d06` | Enabled live snapshot serving and thumbnailUri for TV launcher recommendations. |
 | `67a85ae` | Switched to actual TP-Link Tapo camera names and live widget snapshot captures. |
 | `3687f43` | Cleaned custom names across entire app to use real Tapo device names and live snapshots. |
-| Native Hardening | Implemented cache-busting timestamp URIs, multi-stage live widget snapshot capture (800ms & 2500ms), and ContentResolver change notifications. Verified live on Onn 4K Pro. |
-| Clean Image Extraction | Implemented `extractCleanCameraBitmap()` in `AppWidgetViewManager.kt` to extract the pure Tapo camera bitmap from internal `ImageView`s without UI card borders/buttons. |
-| Native Device Configuration | Added `configureWidget()` in `AppWidgetModule.kt` invoking `startAppWidgetConfigureActivityForResult()` to prompt Tapo's device selection screen upon adding or editing widgets. |
-| Touch Passthrough Restored | Removed `onInterceptTouchEvent` and focus blocking in `AppWidgetViewManager.kt`, restoring click and tap event passthrough to Tapo's internal `RemoteViews` for device selection. |
-| Automatic Snapshot Refresh | Implemented `CustomAppWidgetHostView.updateAppWidget()` callback and `AppState` / `onWindowVisibilityChanged` triggers so newly selected cameras and frame updates automatically capture fresh snapshots to `TvProvider`. |
+| `dc49098` | Hardened live camera snapshots, Monet Launcher support, AppState/widget frame sync, native device configure activity, and touch passthrough. |
 
 ## Validation Record
 
