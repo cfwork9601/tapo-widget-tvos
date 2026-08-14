@@ -15,6 +15,7 @@ Welcome to the technical documentation repository for **Tapo Widget Hub (`com.wi
 ---
 
 ### 📋 2. Planning, Charters & Roadmap
+* **[`CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md)**: Architectural proposal & roadmap for Android TV Preview Channels (`androidx.tvprovider`) publishing Tapo camera media cards to Monet / Google TV.
 * **[`TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md`](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md)**: Phased delivery roadmap for complete device Tapo widget coverage.
 * **[`DEVELOPMENT_LOG.md`](./DEVELOPMENT_LOG.md)**: Active branch progress, validation records, committed milestones, and next session resume point.
 * **[`BRANCH_CHARTER.md`](./BRANCH_CHARTER.md)**: Scope, goals, and architectural working agreements for the `feature/widget-launcher-hardening` branch.
