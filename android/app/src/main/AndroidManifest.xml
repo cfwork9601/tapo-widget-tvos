@@ -38,7 +38,12 @@
         <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
       </intent-filter>
     </activity>
-    <activity android:name="com.widgetlauncher.widgethost.CameraLauncherActivity" android:exported="true" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:excludeFromRecents="true" android:taskAffinity=""/>
+    <activity android:name="com.widgetlauncher.widgethost.CameraLauncherActivity" android:exported="true" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:excludeFromRecents="true" android:taskAffinity="">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
+    </activity>
     <provider android:name="com.widgetlauncher.widgethost.SnapshotContentProvider" android:authorities="com.widgetlauncher.snapshots" android:exported="true" android:grantUriPermissions="true"/>
   </application>
 </manifest>
