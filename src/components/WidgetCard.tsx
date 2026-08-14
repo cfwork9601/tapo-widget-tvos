@@ -29,7 +29,6 @@ export interface WidgetCardProps {
   packageName: string;
   className: string;
   label?: string;
-  customLabel?: string;
   width?: number;
   height?: number;
   isInstalled?: boolean;
@@ -50,7 +49,6 @@ export default function WidgetCard({
   packageName,
   className,
   label,
-  customLabel,
   width = 540,
   height = 380,
   isInstalled = true,
@@ -80,7 +78,7 @@ export default function WidgetCard({
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressHandledRef = useRef<boolean>(false);
 
-  const displayTitle = customLabel || label || packageName;
+  const displayTitle = label || packageName;
   const hasValidId = typeof appWidgetId === 'number' && appWidgetId > 0;
 
   const handleCardPress = () => {
@@ -266,7 +264,6 @@ export default function WidgetCard({
       {/* Top Header Control Bar */}
       <View style={styles.cardHeaderBar}>
         <View style={styles.cardHeaderTitleBox}>
-          {customLabel ? <Text style={styles.customBadge}>CUSTOM</Text> : null}
           <Text style={styles.cardHeaderTitleText} numberOfLines={1}>
             {displayTitle}
           </Text>

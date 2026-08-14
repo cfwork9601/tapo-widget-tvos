@@ -33,7 +33,6 @@ interface ActiveWidget {
   packageName: string;
   className: string;
   label: string;
-  customLabel?: string;
   width?: number;
   height?: number;
   clickAction?: WidgetClickAction;
@@ -68,19 +67,6 @@ const ACTUAL_TAPO_CAMERA_NAMES = [
   'Broilers_Farm_1',
   'EggF_Front',
   'EggF_House1',
-];
-
-const QUICK_RENAME_PRESETS = [
-  'Broilers_Farm_1',
-  'EggF_Front',
-  'EggF_House1',
-  'Front Yard Camera',
-  'Backyard Camera',
-  'Driveway Camera',
-  'Living Room Plug',
-  'Master Plug',
-  'Porch Light',
-  'Hallway Switch',
 ];
 
 const isWidgetClickAction = (value: unknown): value is WidgetClickAction =>
@@ -138,8 +124,6 @@ export default function HomeScreen() {
   const [tilesPerRow, setTilesPerRow] = useState<number>(2);
   const [selectedWidget, setSelectedWidget] = useState<ActiveWidget | null>(null);
   const [isActionSettingsOpen, setIsActionSettingsOpen] = useState(false);
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
-  const [renameInputText, setRenameInputText] = useState('');
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<ActiveWidget[]>([]);
   const [widgetOperationError, setWidgetOperationError] = useState<string | null>(null);
@@ -171,9 +155,15 @@ export default function HomeScreen() {
                   item.clickAction = 'widget_primary';
                   updated = true;
                 }
-                if (!item.customLabel || item.customLabel.startsWith('Camera #') || item.customLabel === 'Front Yard Camera' || item.customLabel === 'Camera') {
+                // Strip any old customLabel
+                if ((item as any).customLabel) {
+                  delete (item as any).customLabel;
+                  updated = true;
+                }
+                // Assign actual Tapo camera name
+                if (item.className.toLowerCase().includes('camera') || item.label.startsWith('Camera #') || item.label === 'Front Yard Camera' || item.label === 'Camera') {
                   if (camIdx < ACTUAL_TAPO_CAMERA_NAMES.length) {
-                    item.customLabel = ACTUAL_TAPO_CAMERA_NAMES[camIdx];
+                    item.label = ACTUAL_TAPO_CAMERA_NAMES[camIdx];
                     updated = true;
                   }
                 }
@@ -259,7 +249,7 @@ export default function HomeScreen() {
         if (!searchTerm) return;
 
         const matched = activeWidgets.find((w) => {
-          const title = (w.customLabel || w.label || '').toLowerCase();
+          const title = (w.label || '').toLowerCase();
           return title.includes(searchTerm) || searchTerm.includes(title);
         });
 
@@ -286,7 +276,7 @@ export default function HomeScreen() {
 
     const payload = targetWidgets.map((w) => ({
       id: w.instanceId,
-      name: w.customLabel || w.label,
+      name: w.label,
       description: (w.className || '').toLowerCase().includes('camera')
         ? '1080p HD Live Stream'
         : 'Smart Home Control',
@@ -331,8 +321,6 @@ export default function HomeScreen() {
 
   const handleCardLongPress = (item: ActiveWidget) => {
     setIsActionSettingsOpen(false);
-    setIsRenameOpen(false);
-    setRenameInputText(item.customLabel || '');
     setSelectedWidget(item);
   };
 
@@ -343,16 +331,6 @@ export default function HomeScreen() {
     persistWidgets(updated);
     setSelectedWidget(updated.find((widget) => widget.instanceId === instanceId) ?? null);
     setIsActionSettingsOpen(false);
-  };
-
-  const updateWidgetCustomLabel = (instanceId: string, customLabel: string) => {
-    const trimmed = customLabel.trim();
-    const updated = activeWidgets.map((widget) =>
-      widget.instanceId === instanceId ? { ...widget, customLabel: trimmed || undefined } : widget
-    );
-    persistWidgets(updated);
-    setSelectedWidget(updated.find((widget) => widget.instanceId === instanceId) ?? null);
-    setIsRenameOpen(false);
   };
 
   const handleRetryBind = async (instanceId: string) => {
@@ -366,7 +344,7 @@ export default function HomeScreen() {
 
     const newId = await allocateAppWidgetId();
     if (newId <= 0) {
-      setWidgetOperationError(`Failed to re-allocate widget ID for ${target.customLabel || target.label}.`);
+      setWidgetOperationError(`Failed to re-allocate widget ID for ${target.label}.`);
       return;
     }
 
@@ -513,7 +491,6 @@ export default function HomeScreen() {
                     id={item.instanceId}
                     appWidgetId={item.appWidgetId}
                     label={item.label}
-                    customLabel={item.customLabel}
                     packageName={item.packageName}
                     className={item.className}
                     width={cardWidth}
@@ -548,7 +525,6 @@ export default function HomeScreen() {
                     id={item.instanceId}
                     appWidgetId={item.appWidgetId}
                     label={item.label}
-                    customLabel={item.customLabel}
                     packageName={item.packageName}
                     className={item.className}
                     width={cardWidth}
@@ -576,9 +552,7 @@ export default function HomeScreen() {
         transparent={true}
         animationType="fade"
         onRequestClose={() => {
-          if (isRenameOpen) {
-            setIsRenameOpen(false);
-          } else if (isActionSettingsOpen) {
+          if (isActionSettingsOpen) {
             setIsActionSettingsOpen(false);
           } else {
             setSelectedWidget(null);
@@ -588,54 +562,17 @@ export default function HomeScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            setIsRenameOpen(false);
             setIsActionSettingsOpen(false);
             setSelectedWidget(null);
           }}
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {selectedWidget?.customLabel || selectedWidget?.label || 'Widget Options'}
+              {selectedWidget?.label || 'Widget Options'}
             </Text>
             <Text style={styles.modalSubtext}>{selectedWidget?.packageName}</Text>
 
-            {isRenameOpen ? (
-              /* Rename Sub-Menu */
-              <>
-                <Text style={styles.actionSettingsHint}>Choose a quick name or clear custom label.</Text>
-                <ScrollView style={styles.presetScroll} contentContainerStyle={{ gap: 8 }}>
-                  {QUICK_RENAME_PRESETS.map((preset, idx) => (
-                    <TouchableOpacity
-                      key={preset}
-                      focusable={true}
-                      hasTVPreferredFocus={idx === 0}
-                      style={styles.modalOptionBtn}
-                      onPress={() => selectedWidget && updateWidgetCustomLabel(selectedWidget.instanceId, preset)}
-                    >
-                      <Text style={styles.modalOptionText}>{preset}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-
-                {selectedWidget?.customLabel ? (
-                  <TouchableOpacity
-                    focusable={true}
-                    style={[styles.modalOptionBtn, styles.modalOptionDanger]}
-                    onPress={() => selectedWidget && updateWidgetCustomLabel(selectedWidget.instanceId, '')}
-                  >
-                    <Text style={[styles.modalOptionText, styles.modalOptionDangerText]}>Reset to Default Name</Text>
-                  </TouchableOpacity>
-                ) : null}
-
-                <TouchableOpacity
-                  focusable={true}
-                  style={styles.modalCancelBtn}
-                  onPress={() => setIsRenameOpen(false)}
-                >
-                  <Text style={styles.modalCancelText}>Back</Text>
-                </TouchableOpacity>
-              </>
-            ) : isActionSettingsOpen ? (
+            {isActionSettingsOpen ? (
               /* Click Action Settings Sub-Menu */
               <>
                 <Text style={styles.actionSettingsHint}>Choose what happens when this card is pressed.</Text>
@@ -665,9 +602,11 @@ export default function HomeScreen() {
                   focusable={true}
                   hasTVPreferredFocus={true}
                   style={styles.modalOptionBtn}
-                  onPress={() => setIsRenameOpen(true)}
+                  onPress={() => setIsActionSettingsOpen(true)}
                 >
-                  <Text style={styles.modalOptionText}>✏️ Rename Widget</Text>
+                  <Text style={styles.modalOptionText}>
+                    ⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
