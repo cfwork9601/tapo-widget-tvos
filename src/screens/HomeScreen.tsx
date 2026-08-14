@@ -493,6 +493,7 @@ export default function HomeScreen() {
                 return (
                   <WidgetCard
                     key={item.instanceId}
+                    id={item.instanceId}
                     appWidgetId={item.appWidgetId}
                     label={item.label}
                     customLabel={item.customLabel}
@@ -527,6 +528,7 @@ export default function HomeScreen() {
                 return (
                   <WidgetCard
                     key={item.instanceId}
+                    id={item.instanceId}
                     appWidgetId={item.appWidgetId}
                     label={item.label}
                     customLabel={item.customLabel}

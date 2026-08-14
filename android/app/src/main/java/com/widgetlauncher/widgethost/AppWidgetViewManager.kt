@@ -117,10 +117,10 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         v.isFocusable = false
         v.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
         hostView = v
-        currentBoundId = targetId
         currentBoundPkg = pkg
         currentBoundCls = cls
         addView(v, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        captureSnapshot()
       } else {
         showFallbackView("Widget Not Bound\n($pkg)")
       }
@@ -128,6 +128,33 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
       e.printStackTrace()
       showFallbackView("Error: ${e.message}")
     }
+  }
+
+  var snapshotId: String? = null
+    set(value) {
+      field = value
+      captureSnapshot()
+    }
+
+  fun captureSnapshot() {
+    val id = snapshotId ?: return
+    postDelayed({
+      try {
+        val v = hostView ?: return@postDelayed
+        if (v.width > 0 && v.height > 0) {
+          val bitmap = android.graphics.Bitmap.createBitmap(v.width, v.height, android.graphics.Bitmap.Config.ARGB_8888)
+          val canvas = android.graphics.Canvas(bitmap)
+          v.draw(canvas)
+          val file = SnapshotContentProvider.getSnapshotFile(context, id)
+          java.io.FileOutputStream(file).use { out ->
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+          }
+          file.setReadable(true, false)
+        }
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+    }, 1200)
   }
 
   private fun showFallbackView(message: String) {
@@ -200,5 +227,10 @@ class AppWidgetViewManager(private val reactContext: ReactApplicationContext) : 
     if (clickToken > 0) {
       view.triggerWidgetClick()
     }
+  }
+
+  @ReactProp(name = "snapshotId")
+  fun setSnapshotId(view: AppWidgetViewContainer, snapshotId: String?) {
+    view.snapshotId = snapshotId
   }
 }

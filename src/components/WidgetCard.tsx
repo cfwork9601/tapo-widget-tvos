@@ -14,6 +14,7 @@ interface AppWidgetNativeProps {
   packageName?: string;
   className?: string;
   clickToken?: number;
+  snapshotId?: string;
   style?: ViewStyle;
 }
 
@@ -44,6 +45,7 @@ export interface WidgetCardProps {
 }
 
 export default function WidgetCard({
+  id,
   appWidgetId,
   packageName,
   className,
@@ -318,6 +320,7 @@ export default function WidgetCard({
           packageName={packageName}
           className={className}
           clickToken={clickToken}
+          snapshotId={id}
         />
       </Pressable>
     </View>

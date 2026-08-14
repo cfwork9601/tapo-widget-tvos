@@ -2,6 +2,7 @@ package com.widgetlauncher.widgethost
 
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
@@ -15,7 +16,7 @@ class SnapshotContentProvider : ContentProvider() {
     val CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY")
 
     fun getSnapshotUri(cameraId: String): Uri {
-      return Uri.withAppendedPath(CONTENT_URI, "$cameraId.jpg")
+      return Uri.parse("content://$AUTHORITY/$cameraId.jpg")
     }
 
     fun getSnapshotFile(context: android.content.Context, cameraId: String): File {
@@ -42,6 +43,11 @@ class SnapshotContentProvider : ContentProvider() {
     }
 
     throw FileNotFoundException("Snapshot not found: $filename")
+  }
+
+  override fun openAssetFile(uri: Uri, mode: String): AssetFileDescriptor? {
+    val pfd = openFile(uri, mode) ?: return null
+    return AssetFileDescriptor(pfd, 0, AssetFileDescriptor.UNKNOWN_LENGTH)
   }
 
   override fun getType(uri: Uri): String {
