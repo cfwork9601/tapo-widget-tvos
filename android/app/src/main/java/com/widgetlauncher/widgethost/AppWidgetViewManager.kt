@@ -5,7 +5,10 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.os.SystemClock
 import android.view.ContextThemeWrapper
 import android.view.Gravity
@@ -13,22 +16,15 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
+import java.io.FileOutputStream
 
 class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
-  init {
-    isFocusable = false
-    descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
-  }
-
-  override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-    // Intercept touch events so child RemoteViews don't swallow gestures from parent React Native Pressable
-    return true
-  }
 
   var appWidgetId: Int = -1
     set(value) {
@@ -59,6 +55,18 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
   private var currentBoundPkg: String? = null
   private var currentBoundCls: String? = null
   private var hostView: AppWidgetHostView? = null
+
+  override fun onWindowVisibilityChanged(visibility: Int) {
+    super.onWindowVisibilityChanged(visibility)
+    if (visibility == View.VISIBLE) {
+      scheduleSnapshotCaptures()
+    }
+  }
+
+  override fun onAttachedToWindow() {
+    super.onAttachedToWindow()
+    scheduleSnapshotCaptures()
+  }
 
   fun rebind() {
     val pkg = packageName
@@ -114,13 +122,16 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         val pureContext = ContextThemeWrapper(context.applicationContext, android.R.style.Theme_DeviceDefault)
         val v = host.createView(pureContext, targetId, info)
         v.setAppWidget(targetId, info)
-        v.isFocusable = false
-        v.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        if (v is CustomAppWidgetHostView) {
+          v.onWidgetUpdated = {
+            postDelayed({ scheduleSnapshotCaptures() }, 400)
+          }
+        }
         hostView = v
         currentBoundPkg = pkg
         currentBoundCls = cls
         addView(v, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        captureSnapshot()
+        scheduleSnapshotCaptures()
       } else {
         showFallbackView("Widget Not Bound\n($pkg)")
       }
@@ -133,28 +144,80 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
   var snapshotId: String? = null
     set(value) {
       field = value
-      captureSnapshot()
+      scheduleSnapshotCaptures()
     }
 
-  fun captureSnapshot() {
+  fun scheduleSnapshotCaptures() {
     val id = snapshotId ?: return
-    postDelayed({
-      try {
-        val v = hostView ?: return@postDelayed
-        if (v.width > 0 && v.height > 0) {
-          val bitmap = android.graphics.Bitmap.createBitmap(v.width, v.height, android.graphics.Bitmap.Config.ARGB_8888)
-          val canvas = android.graphics.Canvas(bitmap)
-          v.draw(canvas)
-          val file = SnapshotContentProvider.getSnapshotFile(context, id)
-          java.io.FileOutputStream(file).use { out ->
-            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+    // Multi-stage capture to guarantee capturing initialized bitmap once camera frame streams
+    postDelayed({ doCapture(id) }, 800)
+    postDelayed({ doCapture(id) }, 2500)
+  }
+
+  private fun findLargestImageView(root: View): ImageView? {
+    var largest: ImageView? = null
+    var maxArea = 0L
+
+    fun dfs(v: View) {
+      if (v is ImageView) {
+        val d = v.drawable
+        if (d != null) {
+          val area = v.width.toLong() * v.height.toLong()
+          if (area > maxArea) {
+            maxArea = area
+            largest = v
           }
-          file.setReadable(true, false)
         }
-      } catch (e: Exception) {
-        e.printStackTrace()
       }
-    }, 1200)
+      if (v is ViewGroup) {
+        for (i in 0 until v.childCount) {
+          dfs(v.getChildAt(i))
+        }
+      }
+    }
+
+    dfs(root)
+    return largest
+  }
+
+  private fun extractCleanCameraBitmap(root: View): Bitmap? {
+    val imgView = findLargestImageView(root)
+    if (imgView != null && imgView.drawable != null && imgView.width > 0 && imgView.height > 0) {
+      val d = imgView.drawable
+      if (d is BitmapDrawable && d.bitmap != null && !d.bitmap.isRecycled) {
+        return d.bitmap
+      }
+      // If custom/vector drawable, draw specifically this ImageView without container UI
+      val bmp = Bitmap.createBitmap(imgView.width, imgView.height, Bitmap.Config.ARGB_8888)
+      val canvas = Canvas(bmp)
+      imgView.draw(canvas)
+      return bmp
+    }
+    return null
+  }
+
+  private fun doCapture(id: String) {
+    try {
+      val v = hostView ?: return
+      if (v.width <= 0 || v.height <= 0) return
+
+      val cleanBitmap = extractCleanCameraBitmap(v)
+      val finalBitmap = cleanBitmap ?: run {
+        val fallback = Bitmap.createBitmap(v.width, v.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(fallback)
+        v.draw(canvas)
+        fallback
+      }
+
+      val file = SnapshotContentProvider.getSnapshotFile(context, id)
+      FileOutputStream(file).use { out ->
+        finalBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+      }
+      file.setReadable(true, false)
+      TapoPreviewChannelManager.notifySnapshotUpdated(context, id)
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
   }
 
   private fun showFallbackView(message: String) {

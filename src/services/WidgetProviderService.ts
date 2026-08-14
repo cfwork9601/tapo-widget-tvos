@@ -8,9 +8,22 @@ export interface WidgetProviderInfo {
   minHeight: number;
   minResizeWidth: number;
   minResizeHeight: number;
+  hasConfigure?: boolean;
 }
 
 const { AppWidgetModule } = NativeModules;
+
+export async function configureWidget(appWidgetId: number): Promise<boolean> {
+  if (!AppWidgetModule || typeof AppWidgetModule.configureWidget !== 'function' || appWidgetId <= 0) {
+    return false;
+  }
+  try {
+    return await AppWidgetModule.configureWidget(appWidgetId);
+  } catch (error) {
+    console.error(`Failed to configure appWidgetId ${appWidgetId}:`, error);
+    return false;
+  }
+}
 
 export async function getInstalledProviders(): Promise<WidgetProviderInfo[]> {
   if (!AppWidgetModule || typeof AppWidgetModule.getInstalledProviders !== 'function') {

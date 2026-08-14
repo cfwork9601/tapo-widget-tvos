@@ -11,14 +11,17 @@ Guidance for the coding agent working on this repo. Read this before generating 
 ---
 
 ## Hard constraints — do not violate
-
-1. **Never hand-edit `android/AndroidManifest.xml` directly.** All manifest changes (HOME/LEANBACK_LAUNCHER intent filters, `<queries>`, permissions) must go through the Expo config plugin at `plugins/withLauncherManifest.js`. Hand-edits get silently wiped on the next `expo prebuild` and this is a known failure mode for this project.
-2. **Never hardcode a widget provider's `packageName`/`className` inside `AppWidgetViewManager.kt` or any RN component.** Provider identity must always be passed in as a prop (`@ReactProp` on the native side, component props on the RN side). One hardcoded exception is acceptable only as a temporary Sprint 3 smoke test, and must be removed before that sprint is marked done.
-3. **Every provider lookup must be wrapped in try/catch with a fallback UI state.** A missing/renamed widget provider must never crash the app — render a placeholder card instead.
-4. **Every widget view creation must have a matching cleanup path.** `onDropViewInstance` must call `appWidgetHost.deleteAppWidgetId()`. Do not add a new place that creates a widget ID without also handling its deletion.
-5. **`AppWidgetHost.startListening()` / `stopListening()` must be tied to the Activity lifecycle** (`onResume`/`onPause`), not called ad hoc from elsewhere.
-6. **Do not use Expo Go for testing.** This project requires a custom dev client (`expo run:android`) because of the native `ViewManager` and `NativeModule`. If a task seems to require Expo Go, stop and flag it — it means something has drifted from the intended architecture.
-7. **No `localStorage`/browser storage APIs** — this is a native RN app, not a web artifact; use RN state/native persistence patterns if persistence is ever needed.
+ 
+1. **Always discuss with the user before doing any task**: Before executing any code changes, creating new files, running complex commands, or starting a task, discuss the plan, approach, or options with the user first and wait for confirmation.
+2. **Mandatory Session Continuity & Resume Here Protocol**: At the end of every task, milestone, or session, the agent **MUST update the `Active Conversation ID`, `## Resume Here` section, `Completed Work`, and `Validation Record` in [`docs/DEVELOPMENT_LOG.md`](./DEVELOPMENT_LOG.md)** so the next session or agent immediately knows where to pick up or revert to without ambiguity.
+3. **Android TV System Preview Channels (`androidx.tvprovider`)**: Tapo Widget Hub acts as a system preview channel publisher to the OS. Do not build in-app 16:9 media rows or side-sheet customizers in `HomeScreen.tsx`.
+4. **Never hand-edit `android/AndroidManifest.xml` directly.** All manifest changes (HOME/LEANBACK_LAUNCHER intent filters, `<queries>`, permissions) must go through the Expo config plugin at `plugins/withLauncherManifest.js`. Hand-edits get silently wiped on the next `expo prebuild` and this is a known failure mode for this project.
+5. **Never hardcode a widget provider's `packageName`/`className` inside `AppWidgetViewManager.kt` or any RN component.** Provider identity must always be passed in as a prop (`@ReactProp` on the native side, component props on the RN side). One hardcoded exception is acceptable only as a temporary Sprint 3 smoke test, and must be removed before that sprint is marked done.
+6. **Every provider lookup must be wrapped in try/catch with a fallback UI state.** A missing/renamed widget provider must never crash the app — render a placeholder card instead.
+7. **Every widget view creation must have a matching cleanup path.** `onDropViewInstance` must call `appWidgetHost.deleteAppWidgetId()`. Do not add a new place that creates a widget ID without also handling its deletion.
+8. **`AppWidgetHost.startListening()` / `stopListening()` must be tied to the Activity lifecycle** (`onResume`/`onPause`), not called ad hoc from elsewhere.
+9. **Do not use Expo Go for testing.** This project requires a custom dev client (`expo run:android` or `expo start --dev-client`) because of the native `ViewManager` and `NativeModule`. If a task seems to require Expo Go, stop and flag it — it means something has drifted from the intended architecture.
+10. **No `localStorage`/browser storage APIs** — this is a native RN app, not a web artifact; use RN state/native persistence patterns if persistence is ever needed.
 
 ---
 

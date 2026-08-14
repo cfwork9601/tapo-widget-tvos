@@ -66,13 +66,13 @@ cd android && ./gradlew assembleDebug && cd ..
 ├── android/                   # Generated Android native project (managed via Expo prebuild)
 ├── assets/                    # Static assets & images
 ├── docs/                      # Technical documentation & runbooks
-│   ├── README.md              # Master documentation index
+│   ├── README.md              # Master documentation index & briefing
 │   ├── ARCHITECTURE.md        # Architectural design & native bridge guide
-│   ├── WIDGET_MEDIA_ROW_FEATURE.md # Specification for cinematic 16:9 widget media rows
+│   ├── CHANNEL_PROPOSAL_PLAN.md # Spec for Android TV Preview Channels (androidx.tvprovider)
 │   ├── RUNBOOK.md             # Step-by-step device deployment & setup guide
 │   ├── TROUBLESHOOTING.md    # Diagnostic & troubleshooting guide
 │   ├── TAPO_CAMERA_LIVE_VIEW_FEATURE.md # Detailed spec for Tapo Live View launch mechanism
-│   ├── agent.md               # AI agent guidelines & strict constraints
+│   ├── agent.md               # AI agent guidelines, strict constraints & continuity protocol
 │   └── implementation.md      # Sprint breakdown & implementation roadmap
 ├── plugins/
 │   ├── withLauncherManifest.js # Config plugin injecting HOME launcher intent filters & permissions

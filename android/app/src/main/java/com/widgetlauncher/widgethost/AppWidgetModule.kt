@@ -1,5 +1,6 @@
 package com.widgetlauncher.widgethost
 
+import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
@@ -45,12 +46,36 @@ class AppWidgetModule(private val reactContext: ReactApplicationContext) : React
         map.putInt("minHeight", info.minHeight)
         map.putInt("minResizeWidth", info.minResizeWidth)
         map.putInt("minResizeHeight", info.minResizeHeight)
+        map.putBoolean("hasConfigure", info.configure != null)
 
         array.pushMap(map)
       }
       promise.resolve(array)
     } catch (e: Exception) {
       promise.reject("ERR_GET_PROVIDERS", e.message, e)
+    }
+  }
+
+  @ReactMethod
+  fun configureWidget(appWidgetId: Int, promise: Promise) {
+    try {
+      val activity: Activity? = reactContext.currentActivity
+      if (activity == null) {
+        promise.reject("ERR_NO_ACTIVITY", "Current activity is null")
+        return
+      }
+
+      val host = AppWidgetHostManager.getHost(reactContext)
+      host.startAppWidgetConfigureActivityForResult(
+        activity,
+        appWidgetId,
+        0,
+        5001,
+        null
+      )
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject("ERR_CONFIGURE", e.message, e)
     }
   }
 

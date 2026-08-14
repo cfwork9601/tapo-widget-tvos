@@ -106,28 +106,29 @@ Live hardware audit via ADB (`192.168.1.67:5555`):
 
 ---
 
-## 5. Home Screen UI Structure & Extension Points
+## 5. Home Screen UI Structure (Internal Dashboard)
 
-* **Media Row Slotting**: In [`src/screens/HomeScreen.tsx`](file:///home/thanhtuan/projects/tvlnc/src/screens/HomeScreen.tsx), a new horizontal recommendations/media row slots directly into `row2Widgets` (replacing the legacy vertical wrapping grid / simple slider) below `row1Settings`.
-* **Image Loading**: Uses standard React Native `<Image>` and native `<AppWidgetView>` containers. No external image caching libraries (`expo-image` / `FastImage`) are installed.
+* **Clean Dashboard Layout**: In [`src/screens/HomeScreen.tsx`](file:///home/thanhtuan/projects/tvlnc/src/screens/HomeScreen.tsx), the internal dashboard maintains its clean, responsive widget grid with top settings bar and D-Pad focus traversal.
+* **Zero In-App UI Modification Principle**: In-app media carousels and side-sheet customizers were evaluated, tested, and explicitly reverted (`c9c2be4`). The app internal UI remains clean, focused purely on widget hosting and D-pad interaction.
 * **Deep Linking / Intent Patterns**:
-  - Incoming: `Linking.addEventListener('url', ...)` handles `widget-hub://live?name=...`.
+  - Incoming: `Linking.addEventListener('url', ...)` handles `widget-hub://live?name=...` and `widget-hub://show?widget=...`.
   - Outgoing: `launchApp(packageName)` starts external activities via `packageManager.getLaunchIntentForPackage`.
 
 ---
 
-## 6. Gaps for WatchNext / PreviewPrograms & Media Cards
+## 6. Android TV System Preview Channels Engine (`androidx.tvprovider`)
 
-* **`TvContractCompat` / `tvprovider` Code**: **Confirmed NONE currently present** in the codebase.
-* **Reusable Foundations**:
-  - ✅ `AppWidgetHostManager.kt` & `AppWidgetViewManager.kt` for embedding live widget layouts inside 16:9 media cards.
-  - ✅ `triggerWidgetClick()` DFS view-tree traversal & MotionEvent dispatching to open live camera feeds (`TapoPadVideoPlayV3Activity`).
-  - ✅ `TapoProviderPickerModal.tsx` for widget selection.
-  - ✅ `SharedPreferences` persistence bridge.
-* **New Components Required**:
-  1. **`WidgetMediaCard.tsx`**: 16:9 widescreen card container with edge-to-edge widget embedding, gradient typography, and `1.05x` focus scaling.
-  2. **Horizontal Media Row** in `HomeScreen.tsx`: D-Pad focus traversal and inline `+ Add Widget` card.
-  3. **`WidgetRowSettingsModal.tsx`**: Monet-style right slide-out customization drawer (cards per row, hide titles toggle, show row name, rename, click actions).
+* **System Channel Publisher**: Instead of internal in-app rows, `Tapo Widget Hub` publishes live camera preview channels directly to the Android TV OS database via `androidx.tvprovider:tvprovider:1.0.0`.
+* **Key Components**:
+  1. **[`plugins/widgethost/TapoPreviewChannelManager.kt`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/TapoPreviewChannelManager.kt)**:
+     - Creates and publishes the `"Tapo Live Cameras"` system channel (`TYPE_PREVIEW`).
+     - Publishes 16:9 `PreviewProgram` media cards populated with actual TP-Link camera names (`3687f43`).
+     - Injects direct `Intent` URIs launching `TapoPadVideoPlayV3Activity` full-screen.
+  2. **[`plugins/widgethost/SnapshotContentProvider.kt`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/SnapshotContentProvider.kt)**:
+     - Secure `ContentProvider` serving cached 16:9 camera snapshots via `content://com.widgetlauncher.snapshots/*` with `grantUriPermissions="true"`.
+  3. **Live Bitmap Extraction in [`AppWidgetViewManager.kt`](file:///home/thanhtuan/projects/tvlnc/plugins/widgethost/AppWidgetViewManager.kt)**:
+     - Captures live widget bitmap surfaces and updates snapshot files for thumbnail URI resolution.
+* **External Launcher Integration**: External launchers (Monet Launcher, Google TV, Projectivy) query `TvProvider` and display the `"Tapo Live Cameras"` recommendation row on the user's primary TV home screen alongside YouTube and Netflix.
 
 ---
 
@@ -139,5 +140,5 @@ Live hardware audit via ADB (`192.168.1.67:5555`):
 | **2. Native Bridge** | 🟢 **READY** | ID lifecycle, Activity listening, and touch interception verified. |
 | **3. Build & Signing** | 🟢 **READY** | Debug keystore and Expo prebuild pipeline verified. |
 | **4. Device Privileges** | 🟢 **READY** | Stock Android 14 Onn box configured via ADB `grantbind`. |
-| **5. Home Screen UI** | 🟡 **NEEDS WORK** | Replace legacy grid with 16:9 `WidgetMediaCard` horizontal row. |
-| **6. Media Row Customizer** | 🟡 **NEEDS WORK** | Build Monet-style slide-out side-sheet drawer. |
+| **5. Clean Internal UI** | 🟢 **READY** | React Native dashboard (`HomeScreen.tsx`) is stable with 0 clutter. |
+| **6. System Preview Channels** | 🟢 **ACTIVE** | `TapoPreviewChannelManager` & `SnapshotContentProvider` active and tested on hardware. |

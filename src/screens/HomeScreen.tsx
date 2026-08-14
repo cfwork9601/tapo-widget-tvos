@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   TextInput,
   Linking,
+  AppState,
 } from 'react-native';
 import WidgetCard from '../components/WidgetCard';
 import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
@@ -23,6 +24,7 @@ import {
   deleteAppWidgetId,
   publishPreviewChannel,
   WidgetProviderInfo,
+  configureWidget,
 } from '../services/WidgetProviderService';
 
 type WidgetClickAction = 'widget_primary' | 'open_tapo_app' | 'none';
@@ -212,12 +214,22 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
+  const processedUrlsRef = React.useRef<Set<string>>(new Set());
+
   // Voice action / Deep Link listener (e.g. widget-hub://live?name=front or widget-hub://show?widget=front)
   useEffect(() => {
     if (activeWidgets.length === 0) return;
 
     const processDeepLink = (url: string | null) => {
       if (!url) return;
+      if (processedUrlsRef.current.has(url)) return;
+      processedUrlsRef.current.add(url);
+
+      // Only handle custom widget-hub:// deep link intents, ignore dev-client wrapper URLs
+      if (!url.startsWith('widget-hub://') && !url.includes('tapo-widget-hub://live')) {
+        return;
+      }
+
       try {
         const queryIndex = url.indexOf('?');
         let queryParams = '';
@@ -233,7 +245,7 @@ export default function HomeScreen() {
           for (const pair of pairs) {
             const [k, v] = pair.split('=');
             if (k === 'name' || k === 'widget' || k === 'query' || k === 'camera') {
-              searchTerm = decodeURIComponent(v || '').toLowerCase();
+              searchTerm = decodeURIComponent(v || '').trim().toLowerCase();
               break;
             }
           }
@@ -242,11 +254,13 @@ export default function HomeScreen() {
         if (!searchTerm) {
           const lastSegment = pathname.split('/').pop();
           if (lastSegment && lastSegment !== 'live' && lastSegment !== 'show' && lastSegment !== 'camera') {
-            searchTerm = decodeURIComponent(lastSegment).toLowerCase();
+            searchTerm = decodeURIComponent(lastSegment).trim().toLowerCase();
           }
         }
 
-        if (!searchTerm) return;
+        if (!searchTerm || searchTerm.length === 0) {
+          return;
+        }
 
         const matched = activeWidgets.find((w) => {
           const title = (w.label || '').toLowerCase();
@@ -268,23 +282,33 @@ export default function HomeScreen() {
 
   // Synchronize Tapo camera preview channels to Android TV system (TvProvider)
   useEffect(() => {
-    if (activeWidgets.length === 0) return;
-    const cameraWidgets = activeWidgets.filter((w) =>
-      (w.className || '').toLowerCase().includes('camera')
-    );
-    const targetWidgets = cameraWidgets.length > 0 ? cameraWidgets : activeWidgets;
+    const syncChannels = () => {
+      if (activeWidgets.length === 0) return;
+      const cameraWidgets = activeWidgets.filter((w) =>
+        (w.className || '').toLowerCase().includes('camera')
+      );
+      const targetWidgets = cameraWidgets.length > 0 ? cameraWidgets : activeWidgets;
 
-    const payload = targetWidgets.map((w) => ({
-      id: w.instanceId,
-      name: w.label,
-      description: (w.className || '').toLowerCase().includes('camera')
-        ? '1080p HD Live Stream'
-        : 'Smart Home Control',
-    }));
+      const payload = targetWidgets.map((w) => ({
+        id: w.instanceId,
+        name: w.label,
+        description: (w.className || '').toLowerCase().includes('camera')
+          ? '1080p HD Live Stream'
+          : 'Smart Home Control',
+      }));
 
-    publishPreviewChannel(payload).catch((e) =>
-      console.warn('Background preview channel publication error:', e)
-    );
+      publishPreviewChannel(payload).catch((e) =>
+        console.warn('Background preview channel publication error:', e)
+      );
+    };
+
+    syncChannels();
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        syncChannels();
+      }
+    });
+    return () => subscription.remove();
   }, [activeWidgets]);
 
   const persistWidgets = (widgets: ActiveWidget[]) => {
@@ -379,6 +403,13 @@ export default function HomeScreen() {
       label: `${displayLabel} #${count}`,
     };
     persistWidgets([...activeWidgets, newWidget]);
+
+    // Prompt Tapo's device selection screen for this widget ID
+    try {
+      await configureWidget(allocatedId);
+    } catch (err) {
+      console.warn('Configure widget error:', err);
+    }
   };
 
   const handleSelectProvider = (provider: WidgetProviderInfo) => {
@@ -607,6 +638,20 @@ export default function HomeScreen() {
                   <Text style={styles.modalOptionText}>
                     ⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}
                   </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  focusable={true}
+                  style={styles.modalOptionBtn}
+                  onPress={async () => {
+                    if (selectedWidget?.appWidgetId) {
+                      const wid = selectedWidget.appWidgetId;
+                      setSelectedWidget(null);
+                      await configureWidget(wid);
+                    }
+                  }}
+                >
+                  <Text style={styles.modalOptionText}>🎯 Select / Change Camera Device</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

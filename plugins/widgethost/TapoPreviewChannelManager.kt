@@ -1,23 +1,32 @@
 package com.widgetlauncher.widgethost
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RectF
 import android.net.Uri
 import androidx.tvprovider.media.tv.PreviewChannel
 import androidx.tvprovider.media.tv.PreviewChannelHelper
 import androidx.tvprovider.media.tv.PreviewProgram
 import androidx.tvprovider.media.tv.TvContractCompat
 import java.io.File
-import java.io.FileOutputStream
 
 object TapoPreviewChannelManager {
 
   private const val CHANNEL_KEY = "tapo_live_cameras_channel_id"
+
+  private val TV_LAUNCHERS = listOf(
+    "com.klevico.monet",
+    "com.google.android.apps.tv.launcherx",
+    "com.google.android.tvlauncher",
+    "com.spocky.projengmenu",
+    "com.amazon.firetv.launcher",
+    "com.tvlauncher",
+    "com.android.tv.settings"
+  )
 
   fun publishCamerasChannel(
     context: Context,
@@ -62,21 +71,21 @@ object TapoPreviewChannelManager {
 
       for (cam in cameras) {
         val snapshotFile = SnapshotContentProvider.getSnapshotFile(context, cam.id)
-        generatePlaceholderSnapshot(snapshotFile, cam.name)
+        if (!snapshotFile.exists() || snapshotFile.length() == 0L) {
+          SnapshotContentProvider.generateDefaultSnapshot(snapshotFile, cam.name)
+        }
 
-        val posterUri = SnapshotContentProvider.getSnapshotUri(cam.id)
+        val lastMod = if (snapshotFile.exists()) snapshotFile.lastModified() else System.currentTimeMillis()
+        val posterUri = SnapshotContentProvider.getSnapshotUri(cam.id, lastMod)
         val intentUri = createCameraLaunchIntentUri(cam.name)
 
-        // Grant URI read permissions to TV launchers
-        val launchers = listOf("com.tvlauncher", "com.google.android.apps.tv.launcherx", "com.google.android.tvlauncher")
-        for (launcher in launchers) {
-          try {
-            context.grantUriPermission(launcher, posterUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          } catch (ignored: Exception) {}
-        }
+        // Grant URI read permissions broadly to TV launchers
+        grantUriToLaunchers(context, posterUri)
 
         val program = PreviewProgram.Builder()
           .setChannelId(channelId)
+          .setContentId(cam.id)
+          .setInternalProviderId(cam.id)
           .setTitle(cam.name)
           .setDescription(cam.description.ifEmpty { "1080p HD Live Stream" })
           .setPosterArtUri(posterUri)
@@ -90,11 +99,60 @@ object TapoPreviewChannelManager {
 
         helper.publishPreviewProgram(program)
       }
+
+      // Notify system database of fresh programs
+      context.contentResolver.notifyChange(TvContractCompat.PreviewPrograms.CONTENT_URI, null)
     } catch (e: Exception) {
       e.printStackTrace()
     }
 
     return channelId
+  }
+
+  fun notifySnapshotUpdated(context: Context, cameraId: String, cameraName: String? = null) {
+    try {
+      val prefs = context.getSharedPreferences("widgetlauncher_prefs", Context.MODE_PRIVATE)
+      val channelId = prefs.getLong(CHANNEL_KEY, -1L)
+      if (channelId <= 0L) return
+
+      val snapshotFile = SnapshotContentProvider.getSnapshotFile(context, cameraId)
+      if (!snapshotFile.exists() || snapshotFile.length() == 0L) return
+
+      val lastMod = snapshotFile.lastModified()
+      val posterUri = SnapshotContentProvider.getSnapshotUri(cameraId, lastMod)
+
+      grantUriToLaunchers(context, posterUri)
+
+      // 1. Update TvProvider database row for this camera's PreviewProgram
+      val values = ContentValues().apply {
+        put(TvContractCompat.PreviewPrograms.COLUMN_POSTER_ART_URI, posterUri.toString())
+        put(TvContractCompat.PreviewPrograms.COLUMN_THUMBNAIL_URI, posterUri.toString())
+        if (!cameraName.isNullOrEmpty()) {
+          put(TvContractCompat.PreviewPrograms.COLUMN_TITLE, cameraName)
+        }
+      }
+
+      context.contentResolver.update(
+        TvContractCompat.PreviewPrograms.CONTENT_URI,
+        values,
+        "${TvContractCompat.PreviewPrograms.COLUMN_CHANNEL_ID} = ? AND (${TvContractCompat.PreviewPrograms.COLUMN_CONTENT_ID} = ? OR ${TvContractCompat.PreviewPrograms.COLUMN_INTERNAL_PROVIDER_ID} = ?)",
+        arrayOf(channelId.toString(), cameraId, cameraId)
+      )
+
+      // 2. Notify database observers (Monet Launcher, Google TV) that preview programs updated
+      context.contentResolver.notifyChange(TvContractCompat.PreviewPrograms.CONTENT_URI, null)
+      context.contentResolver.notifyChange(posterUri, null)
+    } catch (e: Exception) {
+      e.printStackTrace()
+    }
+  }
+
+  private fun grantUriToLaunchers(context: Context, uri: Uri) {
+    for (launcher in TV_LAUNCHERS) {
+      try {
+        context.grantUriPermission(launcher, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      } catch (ignored: Exception) {}
+    }
   }
 
   private fun createCameraLaunchIntentUri(cameraName: String): Uri {
@@ -122,68 +180,6 @@ object TapoPreviewChannelManager {
     }
     canvas.drawText("📹", 40f, 52f, textPaint)
     return bitmap
-  }
-
-  private fun generatePlaceholderSnapshot(targetFile: File, title: String) {
-    try {
-      val width = 1280
-      val height = 720
-      val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-      val canvas = Canvas(bitmap)
-
-      // Background gradient / dark theme
-      val bgPaint = Paint().apply {
-        color = Color.parseColor("#0a0f1d")
-      }
-      canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
-
-      // Accent card outline
-      val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#1e293b")
-        style = Paint.Style.STROKE
-        strokeWidth = 8f
-      }
-      val rect = RectF(16f, 16f, width - 16f, height - 16f)
-      canvas.drawRoundRect(rect, 24f, 24f, strokePaint)
-
-      // Camera Icon Circle
-      val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#0284c7")
-        style = Paint.Style.FILL
-      }
-      canvas.drawCircle(width / 2f, height / 2f - 60f, 70f, circlePaint)
-
-      val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = 64f
-        textAlign = Paint.Align.CENTER
-      }
-      canvas.drawText("📹", width / 2f, height / 2f - 38f, iconPaint)
-
-      // Title
-      val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = 48f
-        textAlign = Paint.Align.CENTER
-        isFakeBoldText = true
-      }
-      canvas.drawText(title, width / 2f, height / 2f + 70f, titlePaint)
-
-      // Subtitle
-      val subPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#38bdf8")
-        textSize = 28f
-        textAlign = Paint.Align.CENTER
-      }
-      canvas.drawText("● TAPO LIVE 1080P HD", width / 2f, height / 2f + 130f, subPaint)
-
-      FileOutputStream(targetFile).use { out ->
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
-      }
-      targetFile.setReadable(true, false)
-    } catch (e: Exception) {
-      e.printStackTrace()
-    }
   }
 
   data class CameraItem(
