@@ -114,23 +114,4 @@ class AppWidgetModule(private val reactContext: ReactApplicationContext) : React
       promise.reject("ERR_DELETE_ID", e.message, e)
     }
   }
-
-  @ReactMethod
-  fun publishPreviewChannel(camerasArray: com.facebook.react.bridge.ReadableArray, promise: Promise) {
-    try {
-      val cameras = mutableListOf<TapoPreviewChannelManager.CameraItem>()
-      for (i in 0 until camerasArray.size()) {
-        val map = camerasArray.getMap(i)
-        val id = map?.getString("id") ?: "cam_$i"
-        val name = map?.getString("name") ?: "Tapo Camera"
-        val desc = map?.getString("description") ?: ""
-        cameras.add(TapoPreviewChannelManager.CameraItem(id, name, desc))
-      }
-
-      val channelId = TapoPreviewChannelManager.publishCamerasChannel(reactContext, cameras)
-      promise.resolve(channelId.toDouble())
-    } catch (e: Exception) {
-      promise.reject("ERR_PUBLISH_CHANNEL", e.message, e)
-    }
-  }
 }

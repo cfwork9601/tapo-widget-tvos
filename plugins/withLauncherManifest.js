@@ -81,24 +81,6 @@ module.exports = function withLauncherManifest(config) {
           });
         }
       }
-
-      // 4. Inject SnapshotContentProvider
-      if (!application.provider) {
-        application.provider = [];
-      }
-      const hasSnapshotProvider = application.provider.some(
-        (p) => p.$?.['android:name'] === 'com.widgetlauncher.widgethost.SnapshotContentProvider'
-      );
-      if (!hasSnapshotProvider) {
-        application.provider.push({
-          $: {
-            'android:name': 'com.widgetlauncher.widgethost.SnapshotContentProvider',
-            'android:authorities': 'com.widgetlauncher.snapshots',
-            'android:exported': 'true',
-            'android:grantUriPermissions': 'true',
-          },
-        });
-      }
     }
 
     return config;

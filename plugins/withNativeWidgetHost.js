@@ -1,4 +1,4 @@
-const { withDangerousMod, withMainActivity, withMainApplication, withAppBuildGradle } = require('@expo/config-plugins');
+const { withDangerousMod, withMainActivity, withMainApplication } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -76,19 +76,6 @@ module.exports = function withNativeWidgetHost(config) {
     }
 
     config.modResults.contents = contents;
-    return config;
-  });
-
-  // 4. Inject androidx.tvprovider dependency into app/build.gradle
-  config = withAppBuildGradle(config, (config) => {
-    let contents = config.modResults.contents;
-    if (!contents.includes('androidx.tvprovider:tvprovider')) {
-      contents = contents.replace(
-        'dependencies {',
-        "dependencies {\n    implementation 'androidx.tvprovider:tvprovider:1.0.0'"
-      );
-      config.modResults.contents = contents;
-    }
     return config;
   });
 

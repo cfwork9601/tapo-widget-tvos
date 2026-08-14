@@ -98,21 +98,3 @@ export async function deleteAppWidgetId(appWidgetId: number): Promise<boolean> {
     return false;
   }
 }
-
-export interface PreviewCameraItem {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-export async function publishPreviewChannel(cameras: PreviewCameraItem[]): Promise<number> {
-  if (!AppWidgetModule || typeof AppWidgetModule.publishPreviewChannel !== 'function') {
-    return -1;
-  }
-  try {
-    return await AppWidgetModule.publishPreviewChannel(cameras);
-  } catch (error) {
-    console.error('Failed to publish preview channel:', error);
-    return -1;
-  }
-}
