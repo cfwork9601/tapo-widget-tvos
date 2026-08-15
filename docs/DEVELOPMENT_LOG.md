@@ -65,9 +65,7 @@
 | `fb99098` | Extracted direct Tapo widget TextView timestamps (`findLastViewTimestamp`) and rendered 1:1 synchronized `"Last view at [time]"` badges on launcher snapshot cards. |
 | `2e15464` | Implemented `CameraLauncherActivity` trampoline and `AppWidgetSnapshotCaptureHelper` to auto-capture updated widget snapshots and timestamps upon returning from full-screen live feeds. |
 | `8fba33c` | Restored direct deep link URI (`widget-hub://live?name=...`) for instant full-screen camera stream launching from TV launcher cards. |
-| *Pending* | Implemented TV D-Pad Navigation & Focus Overhaul: unified single-focus `WidgetCard`, `ModalOptionButton` TV focus state, removed button sub-stops, and stabilized ScrollViews. |
-| *Pending* | Restored touch passthrough (`pointerEvents="auto"`) and implemented `configureToken` native click dispatching in `AppWidgetViewManager.kt` to trigger Tapo's setup/settings `PendingIntent` without permission denial. |
-| *Pending* | Added automatic camera device name extraction (`findDeviceName`) and `onDeviceNameDetected` bridge event to synchronize card titles with actual Tapo camera names in real-time. |
+| `023325a` | Implemented TV D-Pad Navigation & Focus Overhaul, touch passthrough & native configureToken click dispatching, automatic camera device name extraction & real-time sync (`doCapture`), and fixed widget mount auto-trigger. |
 
 ## Validation Record
 
