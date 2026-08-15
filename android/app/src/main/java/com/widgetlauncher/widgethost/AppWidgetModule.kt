@@ -2,6 +2,7 @@ package com.widgetlauncher.widgethost
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -57,7 +58,7 @@ class AppWidgetModule(private val reactContext: ReactApplicationContext) : React
   }
 
   @ReactMethod
-  fun configureWidget(appWidgetId: Int, promise: Promise) {
+  fun configureWidget(appWidgetId: Int, packageName: String?, className: String?, promise: Promise) {
     try {
       val activity: Activity? = reactContext.currentActivity
       if (activity == null) {
@@ -65,17 +66,40 @@ class AppWidgetModule(private val reactContext: ReactApplicationContext) : React
         return
       }
 
-      val host = AppWidgetHostManager.getHost(reactContext)
-      host.startAppWidgetConfigureActivityForResult(
-        activity,
-        appWidgetId,
-        0,
-        5001,
-        null
-      )
-      promise.resolve(true)
+      val appWidgetManager = AppWidgetManager.getInstance(reactContext)
+      var info = appWidgetManager.getAppWidgetInfo(appWidgetId)
+
+      if (info == null && !packageName.isNullOrBlank() && !className.isNullOrBlank()) {
+        val providerComponent = ComponentName(packageName, className)
+        appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, providerComponent)
+        info = appWidgetManager.getAppWidgetInfo(appWidgetId)
+      }
+
+      if (info == null || info.configure == null) {
+        // Widget provider does not have a configuration activity (e.g. static bulbs/plugs)
+        promise.resolve(false)
+        return
+      }
+
+      try {
+        val host = AppWidgetHostManager.getHost(reactContext)
+        host.startAppWidgetConfigureActivityForResult(
+          activity,
+          appWidgetId,
+          0,
+          5001,
+          null
+        )
+        promise.resolve(true)
+      } catch (se: SecurityException) {
+        android.util.Log.w("AppWidgetModule", "Configure activity not exported for direct start: ${se.message}")
+        promise.resolve(false)
+      } catch (e: Exception) {
+        android.util.Log.w("AppWidgetModule", "Could not start configure activity: ${e.message}")
+        promise.resolve(false)
+      }
     } catch (e: Exception) {
-      promise.reject("ERR_CONFIGURE", e.message, e)
+      promise.resolve(false)
     }
   }
 

@@ -3,21 +3,21 @@
 **Branch:** `feature/widget-launcher-hardening`  
 **Milestone Tag / Revert Point:** `version_2_channel_card_fined` (commit `47fc9a1`)  
 **Purpose:** The authoritative handoff record for active development on this branch. Update this file at the end of every meaningful implementation or device-testing session.  
-**Active Conversation ID:** [`2c8fa0a7-79f9-4772-9b89-4dee1087b906`](conversation://2c8fa0a7-79f9-4772-9b89-4dee1087b906) (`/home/thanhtuan/.gemini/antigravity-cli/brain/2c8fa0a7-79f9-4772-9b89-4dee1087b906`)
+**Active Conversation ID:** [`fcbb3ab8-9916-4e64-8d80-9302aca62229`](conversation://fcbb3ab8-9916-4e64-8d80-9302aca62229) (`/home/thanhtuan/.gemini/antigravity-cli/brain/fcbb3ab8-9916-4e64-8d80-9302aca62229`)
 
 ## Resume Here
 
-**Current implementation phase:** **1:1 Widget Timestamp Extraction & Android TV System Preview Channels** fully verified on hardware.
-- **Active Architecture Specification**: [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
-- **Key Achievement**:
-  - Live Tapo camera snapshots (`Broilers_Farm_1`, `EggF_Front`, `EggF_House1`) are captured directly from live widgets.
-  - Native widget hierarchy parser extracts exact `"Last view at HH:mm"` strings directly from Tapo's internal widget TextViews and burns them onto the snapshot pill badge, guaranteeing 100% synchronization between in-app widgets and TV launcher channel cards.
-  - Channel name and real device names are synced and verified.
-  - Card click action launches direct live video stream (`TapoPadVideoPlayV3Activity`).
-  - The internal React Native app UI remains clean and unmodified.
+**Current implementation phase:** **Tapo Camera Device Selection & Auto Name Synchronization (`TASK-WIDGET-SYNC-01`)** implemented & compiled.
+- **Active Architecture Specification**: [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
+- **Key Achievements**:
+  - **Camera Name Auto-Detection (`AppWidgetSnapshotCaptureHelper.kt` & `AppWidgetViewManager.kt`)**: Added `findDeviceName` to extract live camera titles from widget `TextView`s. Emits `onDeviceNameDetected` event back to React Native.
+  - **Real-Time Label Synchronization (`HomeScreen.tsx`)**: Updates `activeWidgets` labels dynamically when a new camera is selected, persisting the change and keeping TV preview channel names synced 1:1.
+  - **Touch Passthrough & Safe Configuration**: Restored `pointerEvents="auto"` and added native `configureToken` dispatching to avoid `SecurityException` while allowing seamless Tapo camera selection.
+  - **Unified Single-Focus Card (`WidgetCard.tsx`)**: Single D-Pad focus stop per card with `#38bdf8` cyan glow and scale transform.
 - **Next Immediate Tasks**:
-  1. Add periodic background sync worker (`SnapshotSyncWorker`) using WorkManager for background snapshot refresh even when the app is in the background.
-  2. Implement WatchNext motion alert cards when Tapo cameras detect motion.
+  1. Test adding/changing camera on live hardware to verify title auto-updates on card header and launcher channel.
+  2. Implement periodic background sync worker (`SnapshotSyncWorker`) using WorkManager for background snapshot refresh even when the app is in the background.
+  3. Implement WatchNext motion alert cards when Tapo cameras detect motion.
 
 ---
 
@@ -31,6 +31,9 @@
 | System Preview Channels | Verified on TV Box | `TapoPreviewChannelManager.kt` publishes `"Tapo Live Cameras"` channel with real names (`Broilers_Farm_1`, `EggF_Front`, `EggF_House1`) on launcher home screen. |
 | Live Snapshot Serving | Verified on TV Box | `SnapshotContentProvider.kt` serves live 16:9 JPEG snapshots with cache-busting timestamps; verified live captures rendering on launcher. |
 | 1:1 Widget Timestamp Sync | Verified on TV Box | Direct Tapo `TextView` extraction formats `"Last view at [time]"` on cards, matching in-app widget timestamps 1:1. |
+| Camera Name Auto-Sync | Implemented & Compiled | `findDeviceName` extracts actual camera titles from `TextView`s and emits `onDeviceNameDetected` to sync React Native card labels. |
+| TV D-Pad Focus Model | Implemented | Unified single-focus card architecture, modal option focus highlights, and stabilized scroll containers. |
+| Camera Device Selector | Implemented | Pre-binds provider component and dispatches native RemoteViews setup clicks. |
 | Per-widget click actions | Verified | Card click action launches `TapoPadVideoPlayV3Activity` full-screen live feed. |
 | Host lifecycle | Implemented | `MainActivity.onResume()` starts widget listening and `onPause()` stops it; the Expo plugin reproduces this after prebuild. |
 | Automated checks | Passing | `npx tsc --noEmit` & Kotlin compile pass with 0 errors. |
@@ -62,6 +65,9 @@
 | `fb99098` | Extracted direct Tapo widget TextView timestamps (`findLastViewTimestamp`) and rendered 1:1 synchronized `"Last view at [time]"` badges on launcher snapshot cards. |
 | `2e15464` | Implemented `CameraLauncherActivity` trampoline and `AppWidgetSnapshotCaptureHelper` to auto-capture updated widget snapshots and timestamps upon returning from full-screen live feeds. |
 | `8fba33c` | Restored direct deep link URI (`widget-hub://live?name=...`) for instant full-screen camera stream launching from TV launcher cards. |
+| *Pending* | Implemented TV D-Pad Navigation & Focus Overhaul: unified single-focus `WidgetCard`, `ModalOptionButton` TV focus state, removed button sub-stops, and stabilized ScrollViews. |
+| *Pending* | Restored touch passthrough (`pointerEvents="auto"`) and implemented `configureToken` native click dispatching in `AppWidgetViewManager.kt` to trigger Tapo's setup/settings `PendingIntent` without permission denial. |
+| *Pending* | Added automatic camera device name extraction (`findDeviceName`) and `onDeviceNameDetected` bridge event to synchronize card titles with actual Tapo camera names in real-time. |
 
 ## Validation Record
 
@@ -77,7 +83,13 @@
 | 2026-08-14 | Live TV Preview Channel Test | Pass | Deployed to Onn 4K Pro (`192.168.1.67:5555`). Verified `Tapo Widget Hub` channel renders live 16:9 snapshots with real device names (`Broilers_Farm_1` & `EggF_Front`) directly on TV launcher home screen above YouTube. |
 | 2026-08-14 | 1:1 Widget Timestamp Parsing | Pass | Verified `findLastViewTimestamp()` extracts `"Last view at HH:mm"` from sibling TextViews directly in live widget hierarchies, perfectly matching widget timestamps (`Broilers_Farm_1: 11:55`, `EggF_Front: 09:26`, `EggF_House1: 11:57`). |
 | 2026-08-14 | Direct Live Stream Launching | Pass | Verified clicking preview cards executes `widget-hub://live?name=...` to dispatch native RemoteViews clicks, opening `TapoPadVideoPlayV3Activity` full-screen live feed instantly without permission denial. |
-| 2026-08-14 | Milestone Tagging | Pass | Created and pushed git tag and branch `version_2_channel_card_fined` at commit `47fc9a1`. |
+| 2026-08-14 | D-Pad Navigation Refactor | Pass | `npx tsc --noEmit` and `./gradlew :app:compileDebugKotlin` passed with 0 errors after unified single-focus card refactor. |
+| 2026-08-14 | Live TV D-Pad Hardware Test | Pass | Deployed to Onn 4K Pro (`192.168.1.67:5555`). Verified unified single-focus card navigation (1 remote click = 1 card step), cyan focus glow borders (`#38bdf8`), modal option interactive focus rings, and full-screen camera stream triggering. |
+| 2026-08-15 | Camera Configuration Binding Fix | Pass | `npx tsc --noEmit` & `./gradlew :app:compileDebugKotlin` passed with 0 errors after pre-binding widget provider in `AppWidgetModule.kt`. |
+| 2026-08-15 | Touch Passthrough & Configure Token Fix | Pass | `npx tsc --noEmit` & `./gradlew :app:compileDebugKotlin` passed with 0 errors after restoring pointerEvents auto and adding native `triggerConfigureClick`. |
+| 2026-08-15 | Camera Name Auto-Sync Feature | Pass | `npx tsc --noEmit` & `./gradlew :app:compileDebugKotlin` passed with 0 errors after integrating `findDeviceName` directly into `doCapture` timestamp flow and `RCTDeviceEventEmitter`. |
+| 2026-08-15 | Live TV Camera Name Auto-Sync Test | Pass | Deployed build to Onn 4K Pro (`192.168.1.67:5555`). Verified live TV launcher preview cards and in-app dashboard automatically synchronized real camera names (`EggF_House1`, `EggF_House5`, `EggF_EntranceBack`) 1:1 with live snapshots and timestamps. |
+| 2026-08-15 | Fix Mount Auto-Trigger Bug | Pass | Verified on Onn 4K Pro (`192.168.1.67:5555`). Guarded `triggerClickToken` and `triggerConfigureToken` with `prevTokenRef` in `WidgetCard.tsx` and reset `triggerClickToken: 0` on storage load; dashboard opens cleanly without auto-triggering the first widget. |
 
 ## Important Decisions
 
@@ -102,6 +114,7 @@ At the end of every development session:
 
 ## Related Documents
 
+- [TV D-Pad Navigation Plan](./TV_DPAD_NAVIGATION_PLAN.md)
 - [Branch Charter](./BRANCH_CHARTER.md)
 - [Application Inspection](./APP_INSPECTION.md)
 - [Implementation Plan](./TAPO_DASHBOARD_IMPLEMENTATION_PLAN.md)

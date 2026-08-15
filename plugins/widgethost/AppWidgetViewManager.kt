@@ -22,10 +22,14 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.common.MapBuilder
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.facebook.react.uimanager.events.RCTEventEmitter
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -131,7 +135,10 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         v.setAppWidget(targetId, info)
         if (v is CustomAppWidgetHostView) {
           v.onWidgetUpdated = {
-            postDelayed({ scheduleSnapshotCaptures() }, 400)
+            postDelayed({
+              scheduleSnapshotCaptures()
+              checkAndEmitDeviceName()
+            }, 400)
           }
         }
         hostView = v
@@ -139,12 +146,43 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         currentBoundCls = cls
         addView(v, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         scheduleSnapshotCaptures()
+        postDelayed({ checkAndEmitDeviceName() }, 800)
+        postDelayed({ checkAndEmitDeviceName() }, 2000)
       } else {
         showFallbackView("Widget Not Bound\n($pkg)")
       }
     } catch (e: Exception) {
       e.printStackTrace()
       showFallbackView("Error: ${e.message}")
+    }
+  }
+
+  fun checkAndEmitDeviceName() {
+    val v = hostView ?: return
+    val name = AppWidgetSnapshotCaptureHelper.findDeviceName(v)
+    android.util.Log.i("AppWidgetViewManager", "checkAndEmitDeviceName for appWidgetId $appWidgetId: detected '$name'")
+    if (!name.isNullOrBlank()) {
+      val reactContext = context as? ThemedReactContext
+      if (reactContext != null) {
+        val event = Arguments.createMap().apply {
+          putString("deviceName", name)
+          putInt("appWidgetId", appWidgetId)
+        }
+        // 1. Direct view event
+        try {
+          reactContext.getJSModule(RCTEventEmitter::class.java)
+            ?.receiveEvent(id, "topDeviceNameDetected", event)
+        } catch (e: Exception) {
+          // View may not be attached to JS hierarchy yet
+        }
+        // 2. Global device event emitter for guaranteed delivery
+        try {
+          reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            ?.emit("onWidgetDeviceNameDetected", event)
+        } catch (e: Exception) {
+          e.printStackTrace()
+        }
+      }
     }
   }
 
@@ -159,6 +197,7 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
     // Multi-stage capture to guarantee capturing initialized bitmap once camera frame streams
     postDelayed({ doCapture(id) }, 800)
     postDelayed({ doCapture(id) }, 2500)
+    postDelayed({ checkAndEmitDeviceName() }, 1000)
   }
 
   private fun findLargestImageView(root: View): ImageView? {
@@ -286,6 +325,26 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
       if (v.width <= 0 || v.height <= 0) return
 
       val lastViewText = findLastViewTimestamp(v)
+      val deviceName = AppWidgetSnapshotCaptureHelper.findDeviceName(v)
+      android.util.Log.i("AppWidgetViewManager", "doCapture for $id (appWidgetId: $appWidgetId): lastView='$lastViewText', deviceName='$deviceName'")
+
+      if (!deviceName.isNullOrBlank()) {
+        val reactContext = context as? ThemedReactContext
+        if (reactContext != null) {
+          val event = Arguments.createMap().apply {
+            putString("instanceId", id)
+            putString("deviceName", deviceName)
+            putInt("appWidgetId", appWidgetId)
+          }
+          try {
+            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+              ?.emit("onWidgetDeviceNameDetected", event)
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+        }
+      }
+
       val cleanBitmap = extractCleanCameraBitmap(v)
       val baseBitmap = cleanBitmap ?: run {
         val fallback = Bitmap.createBitmap(v.width, v.height, Bitmap.Config.ARGB_8888)
@@ -323,6 +382,17 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
     addView(tv, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
   }
 
+  private fun dispatchClickAt(v: View, x: Float, y: Float) {
+    val downTime = SystemClock.uptimeMillis()
+    val eventTime = SystemClock.uptimeMillis()
+    val downEvent = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_DOWN, x, y, 0)
+    val upEvent = MotionEvent.obtain(downTime, eventTime + 80, MotionEvent.ACTION_UP, x, y, 0)
+    v.dispatchTouchEvent(downEvent)
+    v.dispatchTouchEvent(upEvent)
+    downEvent.recycle()
+    upEvent.recycle()
+  }
+
   fun triggerWidgetClick() {
     val v = hostView ?: if (childCount > 0) getChildAt(0) else null
     if (v != null) {
@@ -331,20 +401,23 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
 
       // Target the "Go Live" button at the bottom-left of the Tapo camera widget
       // (x = 25% width, y = 88% height) to trigger TapoPadVideoPlayV3Activity
-      val x = width * 0.25f
-      val y = height * 0.88f
+      dispatchClickAt(v, width * 0.25f, height * 0.88f)
+    }
+  }
 
-      val downTime = SystemClock.uptimeMillis()
-      val eventTime = SystemClock.uptimeMillis()
+  fun triggerConfigureClick() {
+    val v = hostView ?: if (childCount > 0) getChildAt(0) else null
+    if (v != null) {
+      val width = if (v.width > 0) v.width.toFloat() else 540f
+      val height = if (v.height > 0) v.height.toFloat() else 380f
 
-      val downEvent = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_DOWN, x, y, 0)
-      val upEvent = MotionEvent.obtain(downTime, eventTime + 80, MotionEvent.ACTION_UP, x, y, 0)
+      // 1. Dispatch click to Center (Setup / Select Device button on unconfigured widget)
+      dispatchClickAt(v, width * 0.5f, height * 0.5f)
 
-      v.dispatchTouchEvent(downEvent)
-      v.dispatchTouchEvent(upEvent)
-
-      downEvent.recycle()
-      upEvent.recycle()
+      // 2. Also dispatch click to bottom-right settings gear icon (x = 88%, y = 88%)
+      postDelayed({
+        dispatchClickAt(v, width * 0.88f, height * 0.88f)
+      }, 100)
     }
   }
 }
@@ -379,8 +452,21 @@ class AppWidgetViewManager(private val reactContext: ReactApplicationContext) : 
     }
   }
 
+  @ReactProp(name = "configureToken")
+  fun setConfigureToken(view: AppWidgetViewContainer, configureToken: Int) {
+    if (configureToken > 0) {
+      view.triggerConfigureClick()
+    }
+  }
+
   @ReactProp(name = "snapshotId")
   fun setSnapshotId(view: AppWidgetViewContainer, snapshotId: String?) {
     view.snapshotId = snapshotId
+  }
+
+  override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any>? {
+    return mutableMapOf(
+      "topDeviceNameDetected" to mapOf("registrationName" to "onDeviceNameDetected")
+    )
   }
 }

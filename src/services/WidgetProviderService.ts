@@ -13,12 +13,16 @@ export interface WidgetProviderInfo {
 
 const { AppWidgetModule } = NativeModules;
 
-export async function configureWidget(appWidgetId: number): Promise<boolean> {
+export async function configureWidget(
+  appWidgetId: number,
+  packageName?: string,
+  className?: string
+): Promise<boolean> {
   if (!AppWidgetModule || typeof AppWidgetModule.configureWidget !== 'function' || appWidgetId <= 0) {
     return false;
   }
   try {
-    return await AppWidgetModule.configureWidget(appWidgetId);
+    return await AppWidgetModule.configureWidget(appWidgetId, packageName || '', className || '');
   } catch (error) {
     console.error(`Failed to configure appWidgetId ${appWidgetId}:`, error);
     return false;

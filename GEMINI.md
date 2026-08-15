@@ -2,6 +2,7 @@
 
 ## Interaction Guidelines
 - **Always discuss with the user before doing any task**: Before executing any code changes, creating new files, running complex commands, or starting a task, discuss the plan, approach, or options with the user first and wait for confirmation.
+- **No Auto Commit or Push**: NEVER run `git commit` or `git push` automatically. Only commit or push to git when the user explicitly asks you to do so.
 - **Mandatory Session Continuity & Resume Here Protocol**: At the end of every task, milestone, or session, the agent **MUST update the `Active Conversation ID`, `## Resume Here` section, `Completed Work`, and `Validation Record` in [`docs/DEVELOPMENT_LOG.md`](file:///home/thanhtuan/projects/tvlnc/docs/DEVELOPMENT_LOG.md)** so the next session or agent immediately knows where to pick up or revert to without ambiguity.
 
 ## Architectural Directives

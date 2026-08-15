@@ -12,6 +12,7 @@ import {
   TextInput,
   Linking,
   AppState,
+  DeviceEventEmitter,
 } from 'react-native';
 import WidgetCard from '../components/WidgetCard';
 import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
@@ -71,6 +72,8 @@ const ACTUAL_TAPO_CAMERA_NAMES = [
   'EggF_House1',
 ];
 
+let initialUrlHandled = false;
+
 const isWidgetClickAction = (value: unknown): value is WidgetClickAction =>
   value === 'widget_primary' || value === 'open_tapo_app' || value === 'none';
 
@@ -118,6 +121,90 @@ function ControlButton({ label, active, hasTVPreferredFocus, onPress, variant = 
   );
 }
 
+interface ModalOptionButtonProps {
+  label: string;
+  description?: string;
+  isSelected?: boolean;
+  isDanger?: boolean;
+  hasTVPreferredFocus?: boolean;
+  onPress: () => void;
+}
+
+function ModalOptionButton({
+  label,
+  description,
+  isSelected,
+  isDanger,
+  hasTVPreferredFocus,
+  onPress,
+}: ModalOptionButtonProps) {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <Pressable
+      focusable={true}
+      hasTVPreferredFocus={hasTVPreferredFocus}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      onPress={onPress}
+      style={[
+        styles.modalOptionBtn,
+        isSelected ? styles.modalOptionBtnSelected : null,
+        isDanger ? styles.modalOptionDanger : null,
+        isFocused
+          ? isDanger
+            ? styles.modalOptionDangerFocused
+            : styles.modalOptionBtnFocused
+          : null,
+      ]}
+    >
+      <Text
+        style={[
+          styles.modalOptionText,
+          isDanger ? styles.modalOptionDangerText : null,
+          isFocused ? styles.modalOptionTextFocused : null,
+        ]}
+      >
+        {label}
+      </Text>
+      {description ? (
+        <Text
+          style={[
+            styles.modalOptionDescription,
+            isFocused ? styles.modalOptionDescriptionFocused : null,
+          ]}
+        >
+          {description}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function ModalCancelButton({
+  onPress,
+  label = 'Cancel',
+}: {
+  onPress: () => void;
+  label?: string;
+}) {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <Pressable
+      focusable={true}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      onPress={onPress}
+      style={[styles.modalCancelBtn, isFocused ? styles.modalCancelBtnFocused : null]}
+    >
+      <Text style={[styles.modalCancelText, isFocused ? styles.modalCancelTextFocused : null]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const [providers, setProviders] = useState<WidgetProviderInfo[]>([]);
@@ -128,6 +215,7 @@ export default function HomeScreen() {
   const [isActionSettingsOpen, setIsActionSettingsOpen] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<ActiveWidget[]>([]);
+  const [configureTokens, setConfigureTokens] = useState<Record<string, number>>({});
   const [widgetOperationError, setWidgetOperationError] = useState<string | null>(null);
 
   // Dynamic layout calculations based on tilesPerRow setting
@@ -182,16 +270,16 @@ export default function HomeScreen() {
                   }
                 }
               }
-              loadedWidgets = capped;
+              loadedWidgets = capped.map((w: ActiveWidget) => ({ ...w, triggerClickToken: 0 }));
               if (updated || capped.length !== parsed.length) {
-                saveSetting('active_widgets', JSON.stringify(capped));
+                saveSetting('active_widgets', JSON.stringify(loadedWidgets));
               }
             }
           } catch (e) {
             console.warn('Failed parsing active_widgets setting, resetting:', e);
           }
         }
-        setActiveWidgets(loadedWidgets);
+        setActiveWidgets(loadedWidgets.map((w) => ({ ...w, triggerClickToken: 0 })));
 
         const savedMode = await getSetting('layout_mode');
         if (savedMode === 'grid' || savedMode === 'slide') {
@@ -214,18 +302,108 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
-  const processedUrlsRef = React.useRef<Set<string>>(new Set());
+  // Synchronize Tapo camera preview channels to Android TV system (TvProvider)
+  useEffect(() => {
+    const syncChannels = () => {
+      if (activeWidgets.length === 0) return;
+      const cameraWidgets = activeWidgets.filter((w) =>
+        (w.className || '').toLowerCase().includes('camera')
+      );
+      const targetWidgets = cameraWidgets.length > 0 ? cameraWidgets : activeWidgets;
 
-  // Voice action / Deep Link listener (e.g. widget-hub://live?name=front or widget-hub://show?widget=front)
+      const payload = targetWidgets.map((w) => ({
+        id: w.instanceId,
+        name: w.label,
+        description: (w.className || '').toLowerCase().includes('camera')
+          ? '1080p HD Live Stream'
+          : 'Smart Home Control',
+        appWidgetId: w.appWidgetId,
+      }));
+
+      publishPreviewChannel(payload).catch((e) =>
+        console.warn('Background preview channel publication error:', e)
+      );
+    };
+
+    syncChannels();
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        syncChannels();
+      }
+    });
+    return () => subscription.remove();
+  }, [activeWidgets]);
+
+  // Real-time camera device name synchronization from native RemoteViews introspection
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(
+      'onWidgetDeviceNameDetected',
+      (event: { instanceId?: string; appWidgetId?: number; deviceName?: string }) => {
+        const { instanceId, appWidgetId, deviceName } = event;
+        if (!deviceName || !deviceName.trim()) return;
+        const cleanName = deviceName.trim();
+        setActiveWidgets((prev) => {
+          const target = prev.find(
+            (w) =>
+              (instanceId && w.instanceId === instanceId) ||
+              (typeof appWidgetId === 'number' && appWidgetId > 0 && w.appWidgetId === appWidgetId)
+          );
+          if (!target || target.label === cleanName) {
+            return prev;
+          }
+          const updated = prev.map((w) =>
+            (instanceId && w.instanceId === instanceId) ||
+            (typeof appWidgetId === 'number' && appWidgetId > 0 && w.appWidgetId === appWidgetId)
+              ? { ...w, label: cleanName }
+              : w
+          );
+          saveSetting('active_widgets', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    );
+    return () => sub.remove();
+  }, []);
+
+  const persistWidgets = (widgets: ActiveWidget[]) => {
+    setActiveWidgets(widgets);
+    saveSetting('active_widgets', JSON.stringify(widgets));
+  };
+
+  const persistLayoutMode = (mode: 'grid' | 'slide') => {
+    setLayoutMode(mode);
+    saveSetting('layout_mode', mode);
+  };
+
+  const persistTilesPerRow = (count: number) => {
+    setTilesPerRow(count);
+    saveSetting('tiles_per_row', count.toString());
+  };
+
+  const handleCardPress = (item: ActiveWidget) => {
+    const action = getWidgetClickAction(item);
+    if (action === 'open_tapo_app') {
+      launchApp(item.packageName);
+    } else if (action === 'none') {
+      // no-op
+    } else {
+      setActiveWidgets((prev) =>
+        prev.map((w) =>
+          w.instanceId === item.instanceId
+            ? { ...w, triggerClickToken: (w.triggerClickToken || 0) + 1 }
+            : w
+        )
+      );
+    }
+  };
+
+  // Process deep links (live feed deep link is only consumed once on launch)
   useEffect(() => {
     if (activeWidgets.length === 0) return;
 
     const processDeepLink = (url: string | null) => {
       if (!url) return;
-      if (processedUrlsRef.current.has(url)) return;
-      processedUrlsRef.current.add(url);
 
-      // Only handle custom widget-hub:// deep link intents, ignore dev-client wrapper URLs
       if (!url.startsWith('widget-hub://') && !url.includes('tapo-widget-hub://live')) {
         return;
       }
@@ -275,74 +453,13 @@ export default function HomeScreen() {
       }
     };
 
-    Linking.getInitialURL().then(processDeepLink);
+    if (!initialUrlHandled) {
+      initialUrlHandled = true;
+      Linking.getInitialURL().then(processDeepLink);
+    }
     const sub = Linking.addEventListener('url', (event) => processDeepLink(event.url));
     return () => sub.remove();
   }, [activeWidgets]);
-
-  // Synchronize Tapo camera preview channels to Android TV system (TvProvider)
-  useEffect(() => {
-    const syncChannels = () => {
-      if (activeWidgets.length === 0) return;
-      const cameraWidgets = activeWidgets.filter((w) =>
-        (w.className || '').toLowerCase().includes('camera')
-      );
-      const targetWidgets = cameraWidgets.length > 0 ? cameraWidgets : activeWidgets;
-
-      const payload = targetWidgets.map((w) => ({
-        id: w.instanceId,
-        name: w.label,
-        description: (w.className || '').toLowerCase().includes('camera')
-          ? '1080p HD Live Stream'
-          : 'Smart Home Control',
-        appWidgetId: w.appWidgetId,
-      }));
-
-      publishPreviewChannel(payload).catch((e) =>
-        console.warn('Background preview channel publication error:', e)
-      );
-    };
-
-    syncChannels();
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        syncChannels();
-      }
-    });
-    return () => subscription.remove();
-  }, [activeWidgets]);
-
-  const persistWidgets = (widgets: ActiveWidget[]) => {
-    setActiveWidgets(widgets);
-    saveSetting('active_widgets', JSON.stringify(widgets));
-  };
-
-  const persistLayoutMode = (mode: 'grid' | 'slide') => {
-    setLayoutMode(mode);
-    saveSetting('layout_mode', mode);
-  };
-
-  const persistTilesPerRow = (count: number) => {
-    setTilesPerRow(count);
-    saveSetting('tiles_per_row', count.toString());
-  };
-
-  const handleCardPress = (item: ActiveWidget) => {
-    const action = getWidgetClickAction(item);
-    if (action === 'open_tapo_app') {
-      launchApp(item.packageName);
-    } else if (action === 'none') {
-      // no-op
-    } else {
-      setActiveWidgets((prev) =>
-        prev.map((w) =>
-          w.instanceId === item.instanceId
-            ? { ...w, triggerClickToken: (w.triggerClickToken || 0) + 1 }
-            : w
-        )
-      );
-    }
-  };
 
   const handleCardLongPress = (item: ActiveWidget) => {
     setIsActionSettingsOpen(false);
@@ -407,7 +524,7 @@ export default function HomeScreen() {
 
     // Prompt Tapo's device selection screen for this widget ID
     try {
-      await configureWidget(allocatedId);
+      await configureWidget(allocatedId, provider.packageName, provider.className);
     } catch (err) {
       console.warn('Configure widget error:', err);
     }
@@ -432,11 +549,32 @@ export default function HomeScreen() {
     }
   };
 
+  const handleDeviceNameDetected = (instanceId: string, detectedName: string) => {
+    if (!detectedName || !detectedName.trim()) return;
+    const cleanName = detectedName.trim();
+    setActiveWidgets((prev) => {
+      const target = prev.find((w) => w.instanceId === instanceId);
+      if (!target || target.label === cleanName) {
+        return prev;
+      }
+      const updated = prev.map((w) =>
+        w.instanceId === instanceId ? { ...w, label: cleanName } : w
+      );
+      saveSetting('active_widgets', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const tapoProvidersCount = providers.filter((p) => p.packageName === 'com.tplink.iot').length;
 
   return (
     <View style={styles.outerContainer}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        nestedScrollEnabled={false}
+        removeClippedSubviews={false}
+        scrollEventThrottle={16}
+      >
         {/* ROW 1: Header & Settings Control Row */}
         <View style={styles.row1Settings}>
           <View style={styles.headerInfo}>
@@ -513,7 +651,7 @@ export default function HomeScreen() {
           ) : layoutMode === 'grid' ? (
             /* Grid View Row */
             <View style={styles.gridContainer}>
-              {activeWidgets.map((item) => {
+              {activeWidgets.map((item, index) => {
                 const isInstalled = providers.length === 0 || providers.some(
                   (p) => p.packageName === item.packageName && p.className === item.className
                 );
@@ -530,6 +668,8 @@ export default function HomeScreen() {
                     isInstalled={isInstalled}
                     triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
                     triggerClickToken={item.triggerClickToken}
+                    triggerConfigureToken={configureTokens[item.instanceId] || 0}
+                    onDeviceNameDetected={(detected) => handleDeviceNameDetected(item.instanceId, detected)}
                     onPress={() => handleCardPress(item)}
                     onLongPress={() => handleCardLongPress(item)}
                     onOptions={() => handleCardLongPress(item)}
@@ -546,6 +686,8 @@ export default function HomeScreen() {
               horizontal={true}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.slideContainer}
+              nestedScrollEnabled={false}
+              removeClippedSubviews={false}
             >
               {activeWidgets.map((item) => {
                 const isInstalled = providers.length === 0 || providers.some(
@@ -564,6 +706,8 @@ export default function HomeScreen() {
                     isInstalled={isInstalled}
                     triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
                     triggerClickToken={item.triggerClickToken}
+                    triggerConfigureToken={configureTokens[item.instanceId] || 0}
+                    onDeviceNameDetected={(detected) => handleDeviceNameDetected(item.instanceId, detected)}
                     onPress={() => handleCardPress(item)}
                     onLongPress={() => handleCardLongPress(item)}
                     onOptions={() => handleCardLongPress(item)}
@@ -611,97 +755,77 @@ export default function HomeScreen() {
                 {WIDGET_ACTION_OPTIONS.map((option, index) => {
                   const isSelected = selectedWidget && getWidgetClickAction(selectedWidget) === option.id;
                   return (
-                    <TouchableOpacity
+                    <ModalOptionButton
                       key={option.id}
-                      focusable={true}
+                      label={`${isSelected ? '✓ ' : ''}${option.label}`}
+                      description={option.description}
+                      isSelected={Boolean(isSelected)}
                       hasTVPreferredFocus={index === 0}
-                      style={[styles.modalOptionBtn, isSelected ? styles.modalOptionBtnSelected : null]}
                       onPress={() => selectedWidget && updateWidgetClickAction(selectedWidget.instanceId, option.id)}
-                    >
-                      <Text style={styles.modalOptionText}>{isSelected ? '✓ ' : ''}{option.label}</Text>
-                      <Text style={styles.modalOptionDescription}>{option.description}</Text>
-                    </TouchableOpacity>
+                    />
                   );
                 })}
-                <TouchableOpacity focusable={true} style={styles.modalCancelBtn} onPress={() => setIsActionSettingsOpen(false)}>
-                  <Text style={styles.modalCancelText}>Back</Text>
-                </TouchableOpacity>
+                <ModalCancelButton label="Back" onPress={() => setIsActionSettingsOpen(false)} />
               </>
             ) : (
               /* Main Card Context Menu */
               <>
-                <TouchableOpacity
-                  focusable={true}
+                <ModalOptionButton
+                  label="🎯 Select / Change Camera Device"
                   hasTVPreferredFocus={true}
-                  style={styles.modalOptionBtn}
-                  onPress={() => setIsActionSettingsOpen(true)}
-                >
-                  <Text style={styles.modalOptionText}>
-                    ⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  focusable={true}
-                  style={styles.modalOptionBtn}
                   onPress={async () => {
-                    if (selectedWidget?.appWidgetId) {
+                    if (selectedWidget) {
+                      const instId = selectedWidget.instanceId;
                       const wid = selectedWidget.appWidgetId;
+                      const pkg = selectedWidget.packageName;
+                      const cls = selectedWidget.className;
                       setSelectedWidget(null);
-                      await configureWidget(wid);
+                      // 1. Dispatch native click to setup / settings buttons inside RemoteViews
+                      setConfigureTokens((prev) => ({
+                        ...prev,
+                        [instId]: (prev[instId] || 0) + 1,
+                      }));
+                      // 2. Also attempt system configure activity if available
+                      if (wid) {
+                        configureWidget(wid, pkg, cls).catch(() => {});
+                      }
                     }
                   }}
-                >
-                  <Text style={styles.modalOptionText}>🎯 Select / Change Camera Device</Text>
-                </TouchableOpacity>
+                />
 
-                <TouchableOpacity
-                  focusable={true}
-                  style={styles.modalOptionBtn}
+                <ModalOptionButton
+                  label={`⚙ Click Action: ${selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}`}
+                  description="Choose action on short press (Live Stream, Open App, or None)"
+                  onPress={() => setIsActionSettingsOpen(true)}
+                />
+
+                <ModalOptionButton
+                  label="🔄 Retry Binding / Refresh ID"
                   onPress={() => {
                     if (selectedWidget) {
                       handleRetryBind(selectedWidget.instanceId);
                     }
                   }}
-                >
-                  <Text style={styles.modalOptionText}>🔄 Retry Binding / Refresh ID</Text>
-                </TouchableOpacity>
+                />
 
-                <TouchableOpacity
-                  focusable={true}
-                  style={styles.modalOptionBtn}
-                  onPress={() => setIsActionSettingsOpen(true)}
-                >
-                  <Text style={styles.modalOptionText}>
-                    ⚙ Click Action: {selectedWidget ? getWidgetClickActionOption(selectedWidget).label : ''}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  focusable={true}
-                  style={styles.modalOptionBtn}
+                <ModalOptionButton
+                  label="📱 Open Tapo App Now"
                   onPress={() => {
                     const pkg = selectedWidget?.packageName;
                     setSelectedWidget(null);
                     if (pkg) launchApp(pkg);
                   }}
-                >
-                  <Text style={styles.modalOptionText}>📱 Open Tapo App Now</Text>
-                </TouchableOpacity>
+                />
 
-                <TouchableOpacity
-                  focusable={true}
-                  style={[styles.modalOptionBtn, styles.modalOptionDanger]}
+                <ModalOptionButton
+                  label="🗑️ Delete Widget"
+                  isDanger={true}
                   onPress={() => {
                     if (selectedWidget) removeWidget(selectedWidget.instanceId);
                   }}
-                >
-                  <Text style={[styles.modalOptionText, styles.modalOptionDangerText]}>🗑️ Delete Widget</Text>
-                </TouchableOpacity>
+                />
 
-                <TouchableOpacity focusable={true} style={styles.modalCancelBtn} onPress={() => setSelectedWidget(null)}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
+                <ModalCancelButton onPress={() => setSelectedWidget(null)} />
               </>
             )}
           </View>
@@ -919,17 +1043,32 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 10,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#475569',
   },
   modalOptionBtnSelected: {
     backgroundColor: '#075985',
     borderColor: '#38bdf8',
   },
+  modalOptionBtnFocused: {
+    borderColor: '#38bdf8',
+    borderWidth: 2,
+    backgroundColor: '#0284c7',
+    transform: [{ scale: 1.03 }],
+    shadowColor: '#38bdf8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   modalOptionText: {
     color: '#f8fafc',
     fontSize: 15,
     fontWeight: '600',
+  },
+  modalOptionTextFocused: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
   modalOptionDescription: {
     color: '#cbd5e1',
@@ -937,9 +1076,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+  modalOptionDescriptionFocused: {
+    color: '#e0f2fe',
+  },
   modalOptionDanger: {
     backgroundColor: '#7f1d1d',
     borderColor: '#b91c1c',
+  },
+  modalOptionDangerFocused: {
+    borderColor: '#fca5a5',
+    borderWidth: 2,
+    backgroundColor: '#991b1b',
+    transform: [{ scale: 1.03 }],
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 8,
   },
   modalOptionDangerText: {
     color: '#fca5a5',
@@ -948,10 +1101,22 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingVertical: 8,
     paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  modalCancelBtnFocused: {
+    borderColor: '#38bdf8',
+    backgroundColor: '#334155',
+    transform: [{ scale: 1.05 }],
   },
   modalCancelText: {
     color: '#94a3b8',
     fontSize: 14,
     fontWeight: '600',
+  },
+  modalCancelTextFocused: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
 });

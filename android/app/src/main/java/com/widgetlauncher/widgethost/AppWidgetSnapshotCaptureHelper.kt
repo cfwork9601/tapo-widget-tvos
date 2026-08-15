@@ -83,6 +83,62 @@ object AppWidgetSnapshotCaptureHelper {
     return null
   }
 
+  fun findDeviceName(root: View): String? {
+    val texts = mutableListOf<String>()
+    fun dfs(v: View) {
+      if (v is TextView) {
+        val t = v.text?.toString()?.trim()
+        if (!t.isNullOrEmpty()) {
+          texts.add(t)
+        }
+      }
+      if (v is ViewGroup) {
+        for (i in 0 until v.childCount) {
+          dfs(v.getChildAt(i))
+        }
+      }
+    }
+    dfs(root)
+
+    for (raw in texts) {
+      var t = raw
+      if (t.startsWith("Tapo Camera -", ignoreCase = true)) {
+        t = t.substringAfter("-").trim()
+      } else if (t.startsWith("Tapo Plug -", ignoreCase = true)) {
+        t = t.substringAfter("-").trim()
+      } else if (t.startsWith("Tapo Bulb -", ignoreCase = true)) {
+        t = t.substringAfter("-").trim()
+      }
+
+      if (t.equals("Last view at", ignoreCase = true) ||
+          t.equals("Last viewed at", ignoreCase = true) ||
+          t.startsWith("Last view", ignoreCase = true) ||
+          t.matches(Regex(".*\\d{1,2}:\\d{2}.*")) ||
+          t.equals("Tap to select", ignoreCase = true) ||
+          t.equals("Select a camera", ignoreCase = true) ||
+          t.equals("Select device", ignoreCase = true) ||
+          t.equals("Privacy Mode", ignoreCase = true) ||
+          t.equals("Live", ignoreCase = true) ||
+          t.equals("Offline", ignoreCase = true) ||
+          t.equals("Tapo", ignoreCase = true) ||
+          t.equals("Tapo Camera", ignoreCase = true) ||
+          t.equals("Tapo Plug", ignoreCase = true) ||
+          t.equals("Tapo Bulb", ignoreCase = true) ||
+          t.equals("Tapo Smart Plug", ignoreCase = true) ||
+          t.equals("Tapo Smart Bulb", ignoreCase = true) ||
+          t.equals("Smart Plug", ignoreCase = true) ||
+          t.equals("Camera", ignoreCase = true) ||
+          t.equals("Bulb", ignoreCase = true) ||
+          t.equals("Switch", ignoreCase = true) ||
+          t.equals("On", ignoreCase = true) ||
+          t.equals("Off", ignoreCase = true)) {
+        continue
+      }
+      return t
+    }
+    return null
+  }
+
   fun extractCleanCameraBitmap(root: View): Bitmap? {
     val imgView = findLargestImageView(root)
     if (imgView != null && imgView.drawable != null && imgView.width > 0 && imgView.height > 0) {

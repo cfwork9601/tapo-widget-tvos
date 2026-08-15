@@ -14,7 +14,9 @@ interface AppWidgetNativeProps {
   packageName?: string;
   className?: string;
   clickToken?: number;
+  configureToken?: number;
   snapshotId?: string;
+  onDeviceNameDetected?: (event: { nativeEvent: { deviceName: string; appWidgetId: number } }) => void;
   style?: ViewStyle;
 }
 
@@ -34,6 +36,13 @@ export interface WidgetCardProps {
   isInstalled?: boolean;
   triggerWidgetClick?: boolean;
   triggerClickToken?: number;
+  triggerConfigureToken?: number;
+  hasTVPreferredFocus?: boolean;
+  nextFocusUp?: number;
+  nextFocusDown?: number;
+  nextFocusLeft?: number;
+  nextFocusRight?: number;
+  onDeviceNameDetected?: (name: string) => void;
   onPress?: () => void;
   onLongPress?: () => void;
   onOptions?: () => void;
@@ -54,6 +63,13 @@ export default function WidgetCard({
   isInstalled = true,
   triggerWidgetClick = true,
   triggerClickToken,
+  triggerConfigureToken,
+  hasTVPreferredFocus,
+  nextFocusUp,
+  nextFocusDown,
+  nextFocusLeft,
+  nextFocusRight,
+  onDeviceNameDetected,
   onPress,
   onLongPress,
   onOptions,
@@ -63,17 +79,43 @@ export default function WidgetCard({
   style,
 }: WidgetCardProps) {
   const [isFocused, setIsFocused] = useState<boolean>(false);
-  const [isRemoveFocused, setIsRemoveFocused] = useState<boolean>(false);
-  const [isOptionsFocused, setIsOptionsFocused] = useState<boolean>(false);
-  const [isRetryFocused, setIsRetryFocused] = useState<boolean>(false);
-  const [isOpenAppFocused, setIsOpenAppFocused] = useState<boolean>(false);
   const [clickToken, setClickToken] = useState<number>(0);
+  const [configureToken, setConfigureToken] = useState<number>(0);
+
+  const prevClickTokenRef = useRef<number | undefined>(triggerClickToken);
+  const prevConfigureTokenRef = useRef<number | undefined>(triggerConfigureToken);
+  const isMountedRef = useRef<boolean>(false);
 
   React.useEffect(() => {
-    if (typeof triggerClickToken === 'number' && triggerClickToken > 0) {
+    if (!isMountedRef.current) {
+      prevClickTokenRef.current = triggerClickToken;
+      return;
+    }
+    if (
+      typeof triggerClickToken === 'number' &&
+      triggerClickToken > 0 &&
+      triggerClickToken !== prevClickTokenRef.current
+    ) {
+      prevClickTokenRef.current = triggerClickToken;
       setClickToken((prev) => prev + 1);
     }
   }, [triggerClickToken]);
+
+  React.useEffect(() => {
+    if (!isMountedRef.current) {
+      prevConfigureTokenRef.current = triggerConfigureToken;
+      isMountedRef.current = true;
+      return;
+    }
+    if (
+      typeof triggerConfigureToken === 'number' &&
+      triggerConfigureToken > 0 &&
+      triggerConfigureToken !== prevConfigureTokenRef.current
+    ) {
+      prevConfigureTokenRef.current = triggerConfigureToken;
+      setConfigureToken((prev) => prev + 1);
+    }
+  }, [triggerConfigureToken]);
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressHandledRef = useRef<boolean>(false);
@@ -128,10 +170,19 @@ export default function WidgetCard({
     return (
       <Pressable
         focusable={true}
+        hasTVPreferredFocus={hasTVPreferredFocus}
+        nextFocusUp={nextFocusUp}
+        nextFocusDown={nextFocusDown}
+        nextFocusLeft={nextFocusLeft}
+        nextFocusRight={nextFocusRight}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        onPress={onPress}
+        onPressIn={startLongPressTimer}
+        onPressOut={clearLongPressTimer}
+        {...({ onKeyPress: handleKeyPress } as any)}
+        onPress={handlePress}
         onLongPress={onLongPress}
+        delayLongPress={400}
         style={[
           styles.card,
           styles.errorCard,
@@ -153,14 +204,10 @@ export default function WidgetCard({
           <View style={styles.errorActionRow}>
             {onOpenApp ? (
               <TouchableOpacity
-                focusable={true}
-                onFocus={() => setIsOpenAppFocused(true)}
-                onBlur={() => setIsOpenAppFocused(false)}
+                focusable={false}
                 onPress={onOpenApp}
-                style={[
-                  styles.errorActionBtn,
-                  isOpenAppFocused ? styles.errorActionBtnFocused : null,
-                ]}
+                style={styles.errorActionBtn}
+                activeOpacity={0.8}
               >
                 <Text style={styles.errorActionText}>Open App</Text>
               </TouchableOpacity>
@@ -168,15 +215,10 @@ export default function WidgetCard({
 
             {onRemove ? (
               <TouchableOpacity
-                focusable={true}
-                onFocus={() => setIsRemoveFocused(true)}
-                onBlur={() => setIsRemoveFocused(false)}
+                focusable={false}
                 onPress={onRemove}
-                style={[
-                  styles.errorActionBtn,
-                  styles.errorActionBtnDanger,
-                  isRemoveFocused ? styles.errorActionBtnDangerFocused : null,
-                ]}
+                style={[styles.errorActionBtn, styles.errorActionBtnDanger]}
+                activeOpacity={0.8}
               >
                 <Text style={styles.errorActionText}>Delete</Text>
               </TouchableOpacity>
@@ -192,10 +234,19 @@ export default function WidgetCard({
     return (
       <Pressable
         focusable={true}
+        hasTVPreferredFocus={hasTVPreferredFocus}
+        nextFocusUp={nextFocusUp}
+        nextFocusDown={nextFocusDown}
+        nextFocusLeft={nextFocusLeft}
+        nextFocusRight={nextFocusRight}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        onPress={onPress}
+        onPressIn={startLongPressTimer}
+        onPressOut={clearLongPressTimer}
+        {...({ onKeyPress: handleKeyPress } as any)}
+        onPress={handlePress}
         onLongPress={onLongPress}
+        delayLongPress={400}
         style={[
           styles.card,
           styles.errorCard,
@@ -217,14 +268,10 @@ export default function WidgetCard({
           <View style={styles.errorActionRow}>
             {onRetryBind ? (
               <TouchableOpacity
-                focusable={true}
-                onFocus={() => setIsRetryFocused(true)}
-                onBlur={() => setIsRetryFocused(false)}
+                focusable={false}
                 onPress={onRetryBind}
-                style={[
-                  styles.errorActionBtn,
-                  isRetryFocused ? styles.errorActionBtnFocused : null,
-                ]}
+                style={styles.errorActionBtn}
+                activeOpacity={0.8}
               >
                 <Text style={styles.errorActionText}>Retry Bind</Text>
               </TouchableOpacity>
@@ -232,15 +279,10 @@ export default function WidgetCard({
 
             {onRemove ? (
               <TouchableOpacity
-                focusable={true}
-                onFocus={() => setIsRemoveFocused(true)}
-                onBlur={() => setIsRemoveFocused(false)}
+                focusable={false}
                 onPress={onRemove}
-                style={[
-                  styles.errorActionBtn,
-                  styles.errorActionBtnDanger,
-                  isRemoveFocused ? styles.errorActionBtnDangerFocused : null,
-                ]}
+                style={[styles.errorActionBtn, styles.errorActionBtnDanger]}
+                activeOpacity={0.8}
               >
                 <Text style={styles.errorActionText}>Delete</Text>
               </TouchableOpacity>
@@ -251,9 +293,23 @@ export default function WidgetCard({
     );
   }
 
-  // State 3: Normal rendering active native AppWidget view with dedicated header controls
+  // State 3: Normal rendering active native AppWidget view as unified single-focus card
   return (
-    <View
+    <Pressable
+      focusable={true}
+      hasTVPreferredFocus={hasTVPreferredFocus}
+      nextFocusUp={nextFocusUp}
+      nextFocusDown={nextFocusDown}
+      nextFocusLeft={nextFocusLeft}
+      nextFocusRight={nextFocusRight}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      onPressIn={startLongPressTimer}
+      onPressOut={clearLongPressTimer}
+      {...({ onKeyPress: handleKeyPress } as any)}
+      onPress={handlePress}
+      onLongPress={onLongPress}
+      delayLongPress={400}
       style={[
         styles.card,
         { width, height },
@@ -262,9 +318,12 @@ export default function WidgetCard({
       ]}
     >
       {/* Top Header Control Bar */}
-      <View style={styles.cardHeaderBar}>
+      <View style={[styles.cardHeaderBar, isFocused ? styles.cardHeaderBarFocused : null]}>
         <View style={styles.cardHeaderTitleBox}>
-          <Text style={styles.cardHeaderTitleText} numberOfLines={1}>
+          <Text
+            style={[styles.cardHeaderTitleText, isFocused ? styles.cardHeaderTitleTextFocused : null]}
+            numberOfLines={1}
+          >
             {displayTitle}
           </Text>
         </View>
@@ -272,55 +331,47 @@ export default function WidgetCard({
         <View style={styles.headerBtnRow}>
           {onOptions ? (
             <TouchableOpacity
-              focusable={true}
-              onFocus={() => setIsOptionsFocused(true)}
-              onBlur={() => setIsOptionsFocused(false)}
+              focusable={false}
               onPress={onOptions}
-              style={[styles.headerBtn, isOptionsFocused ? styles.headerBtnFocused : null]}
+              style={styles.headerBtn}
               activeOpacity={0.7}
             >
-              <Text style={[styles.headerBtnText, isOptionsFocused ? styles.headerBtnTextFocused : null]}>⚙</Text>
+              <Text style={styles.headerBtnText}>⚙</Text>
             </TouchableOpacity>
           ) : null}
 
           {onRemove ? (
             <TouchableOpacity
-              focusable={true}
-              onFocus={() => setIsRemoveFocused(true)}
-              onBlur={() => setIsRemoveFocused(false)}
+              focusable={false}
               onPress={onRemove}
-              style={[styles.headerBtn, isRemoveFocused ? styles.removeBtnFocused : null]}
+              style={styles.headerBtn}
               activeOpacity={0.7}
             >
-              <Text style={[styles.headerBtnText, isRemoveFocused ? styles.removeBtnTextFocused : null]}>✕</Text>
+              <Text style={styles.headerBtnText}>✕</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       </View>
 
       {/* Main Native Widget View Container */}
-      <Pressable
-        focusable={true}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        onPressIn={startLongPressTimer}
-        onPressOut={clearLongPressTimer}
-        {...({ onKeyPress: handleKeyPress } as any)}
-        onPress={handlePress}
-        onLongPress={onLongPress}
-        delayLongPress={400}
-        style={styles.cardBody}
-      >
+      <View style={styles.cardBody} pointerEvents="auto">
         <NativeAppWidgetView
           style={styles.widgetView}
           appWidgetId={appWidgetId}
           packageName={packageName}
           className={className}
           clickToken={clickToken}
+          configureToken={configureToken}
           snapshotId={id}
+          onDeviceNameDetected={(e: any) => {
+            const detected = e.nativeEvent?.deviceName;
+            if (detected && onDeviceNameDetected) {
+              onDeviceNameDetected(detected);
+            }
+          }}
         />
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -344,12 +395,12 @@ const styles = StyleSheet.create({
     borderColor: '#38bdf8',
     borderWidth: 3,
     backgroundColor: '#0f172a',
-    transform: [{ scale: 1.02 }],
+    transform: [{ scale: 1.03 }],
     shadowColor: '#38bdf8',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 10,
   },
   cardHeaderBar: {
     height: 36,
@@ -362,6 +413,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#334155',
     zIndex: 20,
   },
+  cardHeaderBarFocused: {
+    backgroundColor: '#0369a1',
+    borderBottomColor: '#38bdf8',
+  },
   cardHeaderTitleBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -369,19 +424,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  customBadge: {
-    color: '#0f172a',
-    backgroundColor: '#38bdf8',
-    fontSize: 9,
-    fontWeight: '900',
-    paddingVertical: 1,
-    paddingHorizontal: 5,
-    borderRadius: 4,
-  },
   cardHeaderTitleText: {
     color: '#cbd5e1',
     fontSize: 12,
     fontWeight: '700',
+  },
+  cardHeaderTitleTextFocused: {
+    color: '#ffffff',
+    fontWeight: '800',
   },
   headerBtnRow: {
     flexDirection: 'row',
