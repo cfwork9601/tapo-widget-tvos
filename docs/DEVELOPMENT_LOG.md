@@ -1,9 +1,9 @@
 # Development Log — Tapo Dashboard
 
-**Branch:** `feature/widget-launcher-hardening`  
+**Branch:** `enhancing`  
 **Milestone Tag / Revert Point:** `version_2_channel_card_fined` (commit `47fc9a1`)  
 **Purpose:** The authoritative handoff record for active development on this branch. Update this file at the end of every meaningful implementation or device-testing session.  
-**Active Conversation ID:** [`fcbb3ab8-9916-4e64-8d80-9302aca62229`](conversation://fcbb3ab8-9916-4e64-8d80-9302aca62229) (`/home/thanhtuan/.gemini/antigravity-cli/brain/fcbb3ab8-9916-4e64-8d80-9302aca62229`)
+**Active Conversation ID:** [`12651828-1601-41d8-8686-e7a3d11e076f`](conversation://12651828-1601-41d8-8686-e7a3d11e076f) (`/home/thanhtuan/.gemini/antigravity-cli/brain/12651828-1601-41d8-8686-e7a3d11e076f`)
 
 ## Resume Here
 
@@ -66,6 +66,7 @@
 | `2e15464` | Implemented `CameraLauncherActivity` trampoline and `AppWidgetSnapshotCaptureHelper` to auto-capture updated widget snapshots and timestamps upon returning from full-screen live feeds. |
 | `8fba33c` | Restored direct deep link URI (`widget-hub://live?name=...`) for instant full-screen camera stream launching from TV launcher cards. |
 | `023325a` | Implemented TV D-Pad Navigation & Focus Overhaul, touch passthrough & native configureToken click dispatching, automatic camera device name extraction & real-time sync (`doCapture`), and fixed widget mount auto-trigger. |
+| `agent-rule-pack` | Packed all agent rules, 10-foot UI & D-Pad focus guidelines, Android TV native architecture, and logging templates into `/agent-rule`. |
 
 ## Validation Record
 
@@ -86,8 +87,9 @@
 | 2026-08-15 | Camera Configuration Binding Fix | Pass | `npx tsc --noEmit` & `./gradlew :app:compileDebugKotlin` passed with 0 errors after pre-binding widget provider in `AppWidgetModule.kt`. |
 | 2026-08-15 | Touch Passthrough & Configure Token Fix | Pass | `npx tsc --noEmit` & `./gradlew :app:compileDebugKotlin` passed with 0 errors after restoring pointerEvents auto and adding native `triggerConfigureClick`. |
 | 2026-08-15 | Camera Name Auto-Sync Feature | Pass | `npx tsc --noEmit` & `./gradlew :app:compileDebugKotlin` passed with 0 errors after integrating `findDeviceName` directly into `doCapture` timestamp flow and `RCTDeviceEventEmitter`. |
-| 2026-08-15 | Live TV Camera Name Auto-Sync Test | Pass | Deployed build to Onn 4K Pro (`192.168.1.67:5555`). Verified live TV launcher preview cards and in-app dashboard automatically synchronized real camera names (`EggF_House1`, `EggF_House5`, `EggF_EntranceBack`) 1:1 with live snapshots and timestamps. |
 | 2026-08-15 | Fix Mount Auto-Trigger Bug | Pass | Verified on Onn 4K Pro (`192.168.1.67:5555`). Guarded `triggerClickToken` and `triggerConfigureToken` with `prevTokenRef` in `WidgetCard.tsx` and reset `triggerClickToken: 0` on storage load; dashboard opens cleanly without auto-triggering the first widget. |
+| 2026-08-15 | Standalone APK Build (`version_2.apk`) | Pass | `./gradlew :app:assembleRelease` completed in 4m 56s with 0 errors. Embedded full JavaScript bundle into release APK (66 MB) saved at `/home/thanhtuan/projects/tvlnc/version_2.apk`. |
+| 2026-08-15 | Agent Rule Package Generation | Pass | Verified all agent rules, 10-foot UI focus models, Expo config plugin rules, and development log template created in `/agent-rule`. |
 
 ## Important Decisions
 
