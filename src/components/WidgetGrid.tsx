@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import WidgetCard from './WidgetCard';
+import TVFocusGuide from './TVFocusGuide';
 import { useWidgetStore, getWidgetClickAction, ActiveWidget } from '../stores/widgetStore';
 import { launchApp } from '../services/WidgetProviderService';
 
@@ -60,52 +61,55 @@ export const WidgetGrid = memo(function WidgetGrid() {
 
   if (layoutMode === 'slide') {
     return (
-      <ScrollView
-        horizontal={true}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.slideContainer}
-        nestedScrollEnabled={false}
-        removeClippedSubviews={false}
-      >
-        {activeWidgets.map((item) => {
-          const isInstalled =
-            providers.length === 0 ||
-            providers.some(
-              (p) => p.packageName === item.packageName && p.className === item.className
+      <TVFocusGuide autoFocus={true} style={styles.guideWrapper}>
+        <ScrollView
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.slideContainer}
+          nestedScrollEnabled={false}
+          removeClippedSubviews={false}
+        >
+          {activeWidgets.map((item, index) => {
+            const isInstalled =
+              providers.length === 0 ||
+              providers.some(
+                (p) => p.packageName === item.packageName && p.className === item.className
+              );
+            return (
+              <WidgetCard
+                key={item.instanceId}
+                id={item.instanceId}
+                appWidgetId={item.appWidgetId}
+                label={item.label}
+                packageName={item.packageName}
+                className={item.className}
+                width={cardWidth}
+                height={cardHeight}
+                isInstalled={isInstalled}
+                hasTVPreferredFocus={index === 0}
+                triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
+                triggerClickToken={item.triggerClickToken}
+                triggerConfigureToken={configureTokens[item.instanceId] || 0}
+                onDeviceNameDetected={(detected) =>
+                  handleDeviceNameDetected(item.instanceId, detected)
+                }
+                onPress={() => handleCardPress(item)}
+                onLongPress={() => handleCardOptions(item)}
+                onOptions={() => handleCardOptions(item)}
+                onRemove={() => removeWidget(item.instanceId)}
+                onRetryBind={() => handleRetryBind(item.instanceId)}
+                onOpenApp={() => launchApp(item.packageName)}
+              />
             );
-          return (
-            <WidgetCard
-              key={item.instanceId}
-              id={item.instanceId}
-              appWidgetId={item.appWidgetId}
-              label={item.label}
-              packageName={item.packageName}
-              className={item.className}
-              width={cardWidth}
-              height={cardHeight}
-              isInstalled={isInstalled}
-              triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
-              triggerClickToken={item.triggerClickToken}
-              triggerConfigureToken={configureTokens[item.instanceId] || 0}
-              onDeviceNameDetected={(detected) =>
-                handleDeviceNameDetected(item.instanceId, detected)
-              }
-              onPress={() => handleCardPress(item)}
-              onLongPress={() => handleCardOptions(item)}
-              onOptions={() => handleCardOptions(item)}
-              onRemove={() => removeWidget(item.instanceId)}
-              onRetryBind={() => handleRetryBind(item.instanceId)}
-              onOpenApp={() => launchApp(item.packageName)}
-            />
-          );
-        })}
-      </ScrollView>
+          })}
+        </ScrollView>
+      </TVFocusGuide>
     );
   }
 
   return (
-    <View style={styles.gridContainer}>
-      {activeWidgets.map((item) => {
+    <TVFocusGuide autoFocus={true} style={styles.gridContainer}>
+      {activeWidgets.map((item, index) => {
         const isInstalled =
           providers.length === 0 ||
           providers.some(
@@ -122,6 +126,7 @@ export const WidgetGrid = memo(function WidgetGrid() {
             width={cardWidth}
             height={cardHeight}
             isInstalled={isInstalled}
+            hasTVPreferredFocus={index === 0}
             triggerWidgetClick={getWidgetClickAction(item) === 'widget_primary'}
             triggerClickToken={item.triggerClickToken}
             triggerConfigureToken={configureTokens[item.instanceId] || 0}
@@ -137,7 +142,7 @@ export const WidgetGrid = memo(function WidgetGrid() {
           />
         );
       })}
-    </View>
+    </TVFocusGuide>
   );
 });
 
@@ -147,6 +152,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
+  },
+  guideWrapper: {
+    width: '100%',
   },
   gridContainer: {
     flexDirection: 'row',

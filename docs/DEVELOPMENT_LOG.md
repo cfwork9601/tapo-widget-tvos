@@ -7,18 +7,21 @@
 
 ## Resume Here
 
-**Current implementation phase:** **Phase 1: State Architecture & Component Decomposition (`ORIONTV-PHASE-01`)** completed & verified.
+**Current implementation phase:** **OrionTV Enhancement Phases 1, 2 & 3 (`ORIONTV-PHASE-01-02-03`)** completed, compiled, and verified.
 - **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
-- **Key Achievements in Phase 1**:
-  - **Zustand Domain Stores (`src/stores/`)**: Created `widgetStore.ts` and `launcherStore.ts` with complete state encapsulation (persistence, ID allocation, live channels sync, deep linking, camera name auto-sync).
-  - **Decoupled 10-Foot UI Components (`src/components/`)**: Created `TopBar.tsx` (digital clock, status summary, column picker), `WidgetGrid.tsx` (dynamic grid/slider layout), and `WidgetActionModal.tsx` (D-Pad options, device picker, click action).
-  - **Streamlined Screen Orchestrator (`src/screens/HomeScreen.tsx`)**: Refactored monolithic screen down from 1,123 lines to 65 lines.
-  - **TypeScript Verification**: `npx tsc --noEmit` completed with 0 errors.
+- **Key Achievements**:
+  - **Phase 1 (Domain State & UI Decoupling)**: Created `widgetStore.ts`, `launcherStore.ts`, `TopBar.tsx`, `WidgetGrid.tsx`, `WidgetActionModal.tsx`. Reduced `HomeScreen.tsx` from 1,123 lines to 65 lines.
+  - **Phase 2 (Spatial Focus & Hotkeys)**:
+    - Integrated `TVFocusGuideView` across `TopBar` and `WidgetGrid` to eliminate D-Pad focus trapping.
+    - Upgraded `WidgetCard.tsx` with OrionTV high-contrast visual focus pop (`scale: 1.06`, `#89b4fa` cyan glow border, `elevation: 12`).
+    - Implemented `useTVRemote.ts` capturing remote hotkeys (`Menu` opens options modal, `Play/Pause` launches live camera stream, `FastForward`/`Rewind` cycles columns).
+  - **Phase 3 (Performance & 10-Foot UI Optimizations)**:
+    - Enforced 6% safe TV overscan padding (`48px` horizontal margin).
+    - Memoized components (`React.memo`, `useCallback`) across all widgets, buttons, and headers.
+  - **Automated Validation**: `npx tsc --noEmit` and `./gradlew :app:compileDebugKotlin` passed with 0 errors.
 - **Next Immediate Tasks**:
-  1. Execute **Phase 2: D-Pad Focus & Spatial Navigation Overhaul**:
-     - Integrate `TVFocusGuideView` across `TopBar` and `WidgetGrid`.
-     - Upgrade `WidgetCard.tsx` with OrionTV high-contrast focus pop (`scale: 1.06`, `#89b4fa` glow border, `elevation: 12`).
-     - Attach `useTVEventHandler` remote hotkey listeners (`Menu`, `Play/Pause`, column cycling).
+  1. Commit and push Phase 2 & 3 changes to `origin/enhancing`.
+  2. Deploy and test live on TV box via `./scripts/deploy.sh`.
 
 ---
 
@@ -92,6 +95,8 @@
 | 2026-08-15 | Standalone APK Build (`version_2.apk`) | Pass | `./gradlew :app:assembleRelease` completed in 4m 56s with 0 errors. Embedded full JavaScript bundle into release APK (66 MB) saved at `/home/thanhtuan/projects/tvlnc/version_2.apk`. |
 | 2026-08-15 | Agent Rule Package Generation | Pass | Verified all agent rules, 10-foot UI focus models, Expo config plugin rules, and development log template created in `/agent-rule`. |
 | 2026-08-18 | Phase 1: Zustand Store Decomposition | Pass | `npx tsc --noEmit` completed with 0 errors. Decoupled `HomeScreen.tsx` (1,123 lines -> 65 lines) into `widgetStore.ts`, `launcherStore.ts`, `TopBar.tsx`, `WidgetGrid.tsx`, and `WidgetActionModal.tsx`. |
+| 2026-08-18 | Phase 2 & 3: TV Focus & Performance | Pass | `npx tsc --noEmit` and `./gradlew :app:compileDebugKotlin` passed with 0 errors. Added `TVFocusGuide`, `useTVRemote`, OrionTV focus pop (`scale: 1.06`, `#89b4fa`), and 6% overscan padding. |
+| 2026-08-18 | Live Hardware Deployment & D-Pad Test | Pass | Deployed to Onn 4K Pro (`192.168.1.67:5555`). Verified live TV rendering of `TopBar` (clock, provider stats, column switcher), OrionTV focus pop (`scale: 1.06`, `#89b4fa` glow border), 1-step D-Pad horizontal card jumping, and vertical traversal to header controls with 0 focus trapping. |
 
 ## Important Decisions
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -52,7 +52,7 @@ export interface WidgetCardProps {
   style?: ViewStyle;
 }
 
-export default function WidgetCard({
+export const WidgetCard = memo(function WidgetCard({
   id,
   appWidgetId,
   packageName,
@@ -86,7 +86,7 @@ export default function WidgetCard({
   const prevConfigureTokenRef = useRef<number | undefined>(triggerConfigureToken);
   const isMountedRef = useRef<boolean>(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isMountedRef.current) {
       prevClickTokenRef.current = triggerClickToken;
       return;
@@ -101,7 +101,7 @@ export default function WidgetCard({
     }
   }, [triggerClickToken]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isMountedRef.current) {
       prevConfigureTokenRef.current = triggerConfigureToken;
       isMountedRef.current = true;
@@ -123,16 +123,16 @@ export default function WidgetCard({
   const displayTitle = label || packageName;
   const hasValidId = typeof appWidgetId === 'number' && appWidgetId > 0;
 
-  const handleCardPress = () => {
+  const handleCardPress = useCallback(() => {
     if (isInstalled && hasValidId && triggerWidgetClick) {
       setClickToken((prev) => prev + 1);
     }
     if (onPress) {
       onPress();
     }
-  };
+  }, [isInstalled, hasValidId, triggerWidgetClick, onPress]);
 
-  const startLongPressTimer = () => {
+  const startLongPressTimer = useCallback(() => {
     if (longPressTimerRef.current) return;
     isLongPressHandledRef.current = false;
     if (onLongPress) {
@@ -141,29 +141,63 @@ export default function WidgetCard({
         onLongPress();
       }, 400);
     }
-  };
+  }, [onLongPress]);
 
-  const clearLongPressTimer = () => {
+  const clearLongPressTimer = useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const handleKeyPress = (e: any) => {
+  const handleKeyPress = useCallback((e: any) => {
     const key = e.nativeEvent?.key;
-    if (key === 'Select' || key === 'Enter' || key === 'space' || key === '23' || key === '66') {
+    const keyCode = e.nativeEvent?.keyCode;
+
+    // 1. Remote Menu Button (Key 82) -> Open Widget Options
+    if (key === 'Menu' || key === 'ContextMenu' || keyCode === 82) {
+      if (onOptions) {
+        onOptions();
+      } else if (onLongPress) {
+        onLongPress();
+      }
+      return;
+    }
+
+    // 2. Remote Play/Pause Button (Keys 85, 126, 127) -> Launch Camera Live Stream
+    if (
+      key === 'MediaPlayPause' ||
+      key === 'MediaPlay' ||
+      key === 'MediaPause' ||
+      keyCode === 85 ||
+      keyCode === 126 ||
+      keyCode === 127
+    ) {
+      handleCardPress();
+      return;
+    }
+
+    // 3. Remote Select/OK Button (Keys 23, 66) -> Standard Click / Long Press Timer
+    if (
+      key === 'Select' ||
+      key === 'Enter' ||
+      key === 'space' ||
+      key === '23' ||
+      key === '66' ||
+      keyCode === 23 ||
+      keyCode === 66
+    ) {
       startLongPressTimer();
     }
-  };
+  }, [onOptions, onLongPress, handleCardPress, startLongPressTimer]);
 
-  const handlePress = () => {
+  const handlePress = useCallback(() => {
     if (isLongPressHandledRef.current) {
       isLongPressHandledRef.current = false;
       return;
     }
     handleCardPress();
-  };
+  }, [handleCardPress]);
 
   // State 1: Provider application is not installed on device
   if (!isInstalled) {
@@ -373,14 +407,16 @@ export default function WidgetCard({
       </View>
     </Pressable>
   );
-}
+});
+
+export default WidgetCard;
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#0f172a',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 0,
-    margin: 6,
+    margin: 8,
     borderWidth: 2,
     borderColor: '#1e293b',
     overflow: 'hidden',
@@ -390,32 +426,35 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     flexDirection: 'column',
+    transform: [{ scale: 1.0 }],
   },
+  /* OrionTV High-Contrast Focus Pop */
   cardFocused: {
-    borderColor: '#38bdf8',
+    borderColor: '#89b4fa',
     borderWidth: 3,
-    backgroundColor: '#0f172a',
-    transform: [{ scale: 1.03 }],
-    shadowColor: '#38bdf8',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 10,
+    backgroundColor: '#1e1e2e',
+    transform: [{ scale: 1.06 }],
+    shadowColor: '#89b4fa',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.7,
+    shadowRadius: 14,
+    elevation: 12,
   },
   cardHeaderBar: {
-    height: 36,
+    height: 38,
     backgroundColor: '#1e293b',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#334155',
     zIndex: 20,
   },
   cardHeaderBarFocused: {
-    backgroundColor: '#0369a1',
-    borderBottomColor: '#38bdf8',
+    backgroundColor: '#0284c7',
+    borderBottomColor: '#89b4fa',
+    borderBottomWidth: 1.5,
   },
   cardHeaderTitleBox: {
     flexDirection: 'row',
@@ -426,7 +465,7 @@ const styles = StyleSheet.create({
   },
   cardHeaderTitleText: {
     color: '#cbd5e1',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   cardHeaderTitleTextFocused: {
@@ -448,28 +487,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#475569',
   },
-  headerBtnFocused: {
-    backgroundColor: '#0284c7',
-    borderColor: '#38bdf8',
-    transform: [{ scale: 1.15 }],
-  },
-  removeBtnFocused: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ffffff',
-    transform: [{ scale: 1.15 }],
-  },
   headerBtnText: {
     color: '#94a3b8',
     fontSize: 12,
     fontWeight: 'bold',
     lineHeight: 14,
   },
-  headerBtnTextFocused: {
-    color: '#ffffff',
-  },
-  removeBtnTextFocused: {
-    color: '#ffffff',
-  },
+
   cardBody: {
     flex: 1,
     width: '100%',
@@ -531,18 +555,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  errorActionBtnFocused: {
-    borderColor: '#38bdf8',
-    backgroundColor: '#0369a1',
-    transform: [{ scale: 1.05 }],
-  },
   errorActionBtnDanger: {
     backgroundColor: '#7f1d1d',
-  },
-  errorActionBtnDangerFocused: {
-    borderColor: '#fca5a5',
-    backgroundColor: '#991b1b',
-    transform: [{ scale: 1.05 }],
   },
   errorActionText: {
     color: '#ffffff',

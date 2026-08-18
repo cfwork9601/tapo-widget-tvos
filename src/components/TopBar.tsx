@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { useWidgetStore } from '../stores/widgetStore';
+import TVFocusGuide from './TVFocusGuide';
 
 interface ControlBtnProps {
   label: string;
@@ -72,7 +73,7 @@ export const TopBar = memo(function TopBar({ onOpenPicker }: { onOpenPicker: () 
   const tapoProvidersCount = providers.filter((p) => p.packageName === 'com.tplink.iot').length;
 
   return (
-    <View style={styles.topBarContainer}>
+    <TVFocusGuide trapFocusUp={true} style={styles.topBarContainer}>
       <View style={styles.headerInfo}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>Tapo Widget Hub</Text>
@@ -88,7 +89,7 @@ export const TopBar = memo(function TopBar({ onOpenPicker }: { onOpenPicker: () 
         ) : null}
       </View>
 
-      <View style={styles.settingsToolbar}>
+      <TVFocusGuide autoFocus={false} style={styles.settingsToolbar}>
         {/* Widget Action Buttons */}
         <View style={styles.toolbarSection}>
           <ControlButton
@@ -137,8 +138,8 @@ export const TopBar = memo(function TopBar({ onOpenPicker }: { onOpenPicker: () 
             />
           </View>
         </View>
-      </View>
-    </View>
+      </TVFocusGuide>
+    </TVFocusGuide>
   );
 });
 

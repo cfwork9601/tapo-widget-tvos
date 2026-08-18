@@ -6,8 +6,11 @@ import { WidgetGrid } from '../components/WidgetGrid';
 import { WidgetActionModal } from '../components/WidgetActionModal';
 import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
 import { WidgetProviderInfo } from '../services/WidgetProviderService';
+import { useTVRemote } from '../hooks/useTVRemote';
 
 export default function HomeScreen() {
+  useTVRemote();
+
   const loadInitialData = useWidgetStore((state) => state.loadInitialData);
   const initEventListeners = useWidgetStore((state) => state.initEventListeners);
   const isPickerOpen = useWidgetStore((state) => state.isPickerOpen);
