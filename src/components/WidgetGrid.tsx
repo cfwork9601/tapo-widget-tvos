@@ -33,7 +33,7 @@ export const WidgetGrid = memo(function WidgetGrid() {
   const availableWidth = Math.max(screenWidth - containerPadding, 600);
   const tileMargin = 16;
   const cardWidth = Math.floor((availableWidth - tilesPerRow * tileMargin) / tilesPerRow);
-  const cardHeight = Math.max(Math.floor(cardWidth * 0.78), 280);
+  const cardHeight = Math.max(Math.floor(cardWidth * 0.65), 220);
 
   const handleCardOptions = (item: ActiveWidget) => {
     setIsActionSettingsOpen(false);

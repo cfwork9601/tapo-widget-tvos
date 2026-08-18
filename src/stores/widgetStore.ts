@@ -77,6 +77,7 @@ interface WidgetState {
   selectedWidget: ActiveWidget | null;
   isActionSettingsOpen: boolean;
   isPickerOpen: boolean;
+  isSettingsDrawerOpen: boolean;
   configureTokens: Record<string, number>;
 
   // Actions
@@ -87,6 +88,7 @@ interface WidgetState {
   setSelectedWidget: (widget: ActiveWidget | null) => void;
   setIsActionSettingsOpen: (open: boolean) => void;
   setIsPickerOpen: (open: boolean) => void;
+  setIsSettingsDrawerOpen: (open: boolean) => void;
   handleCardPress: (item: ActiveWidget) => void;
   updateWidgetClickAction: (instanceId: string, clickAction: WidgetClickAction) => void;
   handleRetryBind: (instanceId: string) => Promise<void>;
@@ -108,6 +110,7 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
   selectedWidget: null,
   isActionSettingsOpen: false,
   isPickerOpen: false,
+  isSettingsDrawerOpen: false,
   configureTokens: {},
 
   loadInitialData: async () => {
@@ -233,6 +236,10 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
 
   setIsPickerOpen: (open: boolean) => {
     set({ isPickerOpen: open });
+  },
+
+  setIsSettingsDrawerOpen: (open: boolean) => {
+    set({ isSettingsDrawerOpen: open });
   },
 
   handleCardPress: (item: ActiveWidget) => {

@@ -7,21 +7,16 @@
 
 ## Resume Here
 
-**Current implementation phase:** **OrionTV Enhancement Phases 1, 2 & 3 (`ORIONTV-PHASE-01-02-03`)** completed, compiled, and verified.
-- **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
+**Current implementation phase:** **Minimalist TV Dashboard & Slide-Over Settings Overlay (`MINIMALIST-TV-DASHBOARD-01`)** completed, compiled, and verified live on hardware.
+- **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/DEVELOPMENT_LOG.md`](./DEVELOPMENT_LOG.md).
 - **Key Achievements**:
-  - **Phase 1 (Domain State & UI Decoupling)**: Created `widgetStore.ts`, `launcherStore.ts`, `TopBar.tsx`, `WidgetGrid.tsx`, `WidgetActionModal.tsx`. Reduced `HomeScreen.tsx` from 1,123 lines to 65 lines.
-  - **Phase 2 (Spatial Focus & Hotkeys)**:
-    - Integrated `TVFocusGuideView` across `TopBar` and `WidgetGrid` to eliminate D-Pad focus trapping.
-    - Upgraded `WidgetCard.tsx` with OrionTV high-contrast visual focus pop (`scale: 1.06`, `#89b4fa` cyan glow border, `elevation: 12`).
-    - Implemented `useTVRemote.ts` capturing remote hotkeys (`Menu` opens options modal, `Play/Pause` launches live camera stream, `FastForward`/`Rewind` cycles columns).
-  - **Phase 3 (Performance & 10-Foot UI Optimizations)**:
-    - Enforced 6% safe TV overscan padding (`48px` horizontal margin).
-    - Memoized components (`React.memo`, `useCallback`) across all widgets, buttons, and headers.
-  - **Automated Validation**: `npx tsc --noEmit` and `./gradlew :app:compileDebugKotlin` passed with 0 errors.
+  - **Slide-Over Settings Overlay (`SettingsDrawer.tsx`)**: Created a non-disruptive in-tree overlay (`position: 'absolute'`, `zIndex: 9999`, `width: 460px`) preserving underlying `AppWidgetHostView`s and video streams with zero layout shifts or unmounting.
+  - **Minimalist TopBar (`TopBar.tsx`)**: Compact header bar with title, clock, and `⚙ Settings` button, unlocking 20% additional dashboard real estate.
+  - **Pure Edge-to-Edge Widget Cards (`WidgetCard.tsx`)**: Removed duplicate header bars, titles, and clutter buttons. Native Tapo widgets occupy 100% of the rounded card area.
+  - **Snug 16:9 Aspect Ratio & Zero-Padding**: Adjusted card height calculation from `0.78` to `0.65` in `WidgetGrid.tsx` and zeroed out container padding in `AppWidgetViewManager.kt` to eliminate dead space.
+  - **Hardware Validation**: Tested and verified live on Onn 4K Pro (`192.168.1.67:5555`) with full D-Pad navigation, OrionTV focus glow outline, and instant live video launch.
 - **Next Immediate Tasks**:
-  1. Commit and push Phase 2 & 3 changes to `origin/enhancing`.
-  2. Deploy and test live on TV box via `./scripts/deploy.sh`.
+  1. Continue pairing with the user for any additional TV dashboard features or custom widget styling.
 
 ---
 
@@ -97,6 +92,10 @@
 | 2026-08-18 | Phase 1: Zustand Store Decomposition | Pass | `npx tsc --noEmit` completed with 0 errors. Decoupled `HomeScreen.tsx` (1,123 lines -> 65 lines) into `widgetStore.ts`, `launcherStore.ts`, `TopBar.tsx`, `WidgetGrid.tsx`, and `WidgetActionModal.tsx`. |
 | 2026-08-18 | Phase 2 & 3: TV Focus & Performance | Pass | `npx tsc --noEmit` and `./gradlew :app:compileDebugKotlin` passed with 0 errors. Added `TVFocusGuide`, `useTVRemote`, OrionTV focus pop (`scale: 1.06`, `#89b4fa`), and 6% overscan padding. |
 | 2026-08-18 | Live Hardware Deployment & D-Pad Test | Pass | Deployed to Onn 4K Pro (`192.168.1.67:5555`). Verified live TV rendering of `TopBar` (clock, provider stats, column switcher), OrionTV focus pop (`scale: 1.06`, `#89b4fa` glow border), 1-step D-Pad horizontal card jumping, and vertical traversal to header controls with 0 focus trapping. |
+| 2026-08-18 | Slide-Over Settings Overlay Implementation | Pass | Implemented `SettingsDrawer.tsx` as a non-disruptive in-tree overlay (`position: 'absolute'`, `zIndex: 9999`) and minimalist `TopBar.tsx`. Tested on Onn 4K Pro (`192.168.1.67:5555`): verified that opening the settings drawer leaves the underlying widget screen and native live video views 100% unaffected, un-shifted, and uninterrupted. |
+| 2026-08-18 | Pure Edge-to-Edge Minimalist Widget Card (Design 1) | Pass | Removed duplicate card header bars and top action buttons from `WidgetCard.tsx`. Tested on Onn 4K Pro (`192.168.1.67:5555`): verified 100% edge-to-edge pure native widget rendering with clean rounded corners and OrionTV focus glow outline (`scale: 1.05`, `#89b4fa`). |
+| 2026-08-18 | Snug 16:9 Aspect Ratio & Zero-Padding Fix | Pass | Updated `WidgetGrid.tsx` card height aspect ratio from `0.78` to `0.65` and zeroed out native container padding in `AppWidgetViewManager.kt`. Verified on Onn 4K Pro (`192.168.1.67:5555`): eliminated all dead space and padding around Tapo camera widgets. |
+| 2026-08-18 | Reverted to Pure Design 1 Snug Layout | Pass | Restored natural 1.0 scale and pure native Tapo widget UI in `WidgetCard.tsx` and `AppWidgetViewManager.kt`. Verified on Onn 4K Pro (`192.168.1.67:5555`): clean, snug 16:9 card profile with crisp original Tapo widget layout and buttons. |
 
 ## Important Decisions
 

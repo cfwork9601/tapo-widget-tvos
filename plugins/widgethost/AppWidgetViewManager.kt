@@ -37,6 +37,35 @@ import java.util.Locale
 
 class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
 
+  var cleanSnapshotMode: Boolean = false
+    set(value) {
+      if (field != value) {
+        field = value
+        updateViewVisibility()
+      }
+    }
+
+  private val cleanImageView: ImageView = ImageView(context).apply {
+    scaleType = ImageView.ScaleType.CENTER_CROP
+    layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+    visibility = View.GONE
+  }
+
+  init {
+    setPadding(0, 0, 0, 0)
+    addView(cleanImageView)
+  }
+
+  private fun updateViewVisibility() {
+    if (cleanSnapshotMode && cleanImageView.drawable != null) {
+      cleanImageView.visibility = View.VISIBLE
+      hostView?.visibility = View.INVISIBLE
+    } else {
+      cleanImageView.visibility = View.GONE
+      hostView?.visibility = View.VISIBLE
+    }
+  }
+
   var appWidgetId: Int = -1
     set(value) {
       if (field != value) {
@@ -104,6 +133,7 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
 
   private fun performRebind(pkg: String, cls: String) {
     removeAllViews()
+    addView(cleanImageView)
     hostView = null
 
     try {
@@ -133,6 +163,7 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         val pureContext = ContextThemeWrapper(context.applicationContext, android.R.style.Theme_DeviceDefault)
         val v = host.createView(pureContext, targetId, info)
         v.setAppWidget(targetId, info)
+        v.setPadding(0, 0, 0, 0)
         if (v is CustomAppWidgetHostView) {
           v.onWidgetUpdated = {
             postDelayed({
@@ -144,7 +175,8 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
         hostView = v
         currentBoundPkg = pkg
         currentBoundCls = cls
-        addView(v, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        addView(v, 0, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        updateViewVisibility()
         scheduleSnapshotCaptures()
         postDelayed({ checkAndEmitDeviceName() }, 800)
         postDelayed({ checkAndEmitDeviceName() }, 2000)
@@ -193,11 +225,12 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
     }
 
   fun scheduleSnapshotCaptures() {
-    val id = snapshotId ?: return
+    val id = snapshotId ?: if (appWidgetId > 0) "widget_$appWidgetId" else return
     // Multi-stage capture to guarantee capturing initialized bitmap once camera frame streams
-    postDelayed({ doCapture(id) }, 800)
+    postDelayed({ doCapture(id) }, 400)
+    postDelayed({ doCapture(id) }, 1200)
     postDelayed({ doCapture(id) }, 2500)
-    postDelayed({ checkAndEmitDeviceName() }, 1000)
+    postDelayed({ checkAndEmitDeviceName() }, 800)
   }
 
   private fun findLargestImageView(root: View): ImageView? {
@@ -355,6 +388,11 @@ class AppWidgetViewContainer(context: Context) : FrameLayout(context) {
 
       val finalBitmap = drawTimestampOverlay(baseBitmap, lastViewText)
 
+      post {
+        cleanImageView.setImageBitmap(finalBitmap)
+        updateViewVisibility()
+      }
+
       val file = SnapshotContentProvider.getSnapshotFile(context, id)
       FileOutputStream(file).use { out ->
         finalBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
@@ -428,6 +466,11 @@ class AppWidgetViewManager(private val reactContext: ReactApplicationContext) : 
 
   override fun createViewInstance(reactContext: ThemedReactContext): AppWidgetViewContainer {
     return AppWidgetViewContainer(reactContext)
+  }
+
+  @ReactProp(name = "cleanSnapshotMode", defaultBoolean = false)
+  fun setCleanSnapshotMode(view: AppWidgetViewContainer, cleanSnapshotMode: Boolean) {
+    view.cleanSnapshotMode = cleanSnapshotMode
   }
 
   @ReactProp(name = "appWidgetId", defaultInt = -1)

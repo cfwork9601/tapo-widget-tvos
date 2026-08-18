@@ -4,6 +4,7 @@ import { useWidgetStore } from '../stores/widgetStore';
 import { TopBar } from '../components/TopBar';
 import { WidgetGrid } from '../components/WidgetGrid';
 import { WidgetActionModal } from '../components/WidgetActionModal';
+import { SettingsDrawer } from '../components/SettingsDrawer';
 import TapoProviderPickerModal from '../components/TapoProviderPickerModal';
 import { WidgetProviderInfo } from '../services/WidgetProviderService';
 import { useTVRemote } from '../hooks/useTVRemote';
@@ -15,6 +16,7 @@ export default function HomeScreen() {
   const initEventListeners = useWidgetStore((state) => state.initEventListeners);
   const isPickerOpen = useWidgetStore((state) => state.isPickerOpen);
   const setIsPickerOpen = useWidgetStore((state) => state.setIsPickerOpen);
+  const setIsSettingsDrawerOpen = useWidgetStore((state) => state.setIsSettingsDrawerOpen);
   const providers = useWidgetStore((state) => state.providers);
   const addWidget = useWidgetStore((state) => state.addWidget);
 
@@ -40,14 +42,17 @@ export default function HomeScreen() {
         removeClippedSubviews={false}
         scrollEventThrottle={16}
       >
-        {/* ROW 1: Header Bar with Clock, Status, & Column Layout Switcher */}
-        <TopBar onOpenPicker={() => setIsPickerOpen(true)} />
+        {/* Minimalist TV Top Header Bar (Clock & Settings Trigger) */}
+        <TopBar onOpenSettings={() => setIsSettingsDrawerOpen(true)} />
 
-        {/* ROW 2: Dynamic Widget Grid / Slider Area */}
+        {/* Dynamic Widget Grid / Slider Area */}
         <View style={styles.gridWrapper}>
           <WidgetGrid />
         </View>
       </ScrollView>
+
+      {/* Slide-Over Settings Drawer Modal */}
+      <SettingsDrawer onOpenPicker={() => setIsPickerOpen(true)} />
 
       {/* Widget Action & Option Modal */}
       <WidgetActionModal />

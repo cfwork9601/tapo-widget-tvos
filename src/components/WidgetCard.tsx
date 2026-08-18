@@ -16,6 +16,7 @@ interface AppWidgetNativeProps {
   clickToken?: number;
   configureToken?: number;
   snapshotId?: string;
+  cleanSnapshotMode?: boolean;
   onDeviceNameDetected?: (event: { nativeEvent: { deviceName: string; appWidgetId: number } }) => void;
   style?: ViewStyle;
 }
@@ -327,7 +328,7 @@ export const WidgetCard = memo(function WidgetCard({
     );
   }
 
-  // State 3: Normal rendering active native AppWidget view as unified single-focus card
+  // State 3: Pure Edge-to-Edge Minimalist Widget Card
   return (
     <Pressable
       focusable={true}
@@ -351,43 +352,7 @@ export const WidgetCard = memo(function WidgetCard({
         style,
       ]}
     >
-      {/* Top Header Control Bar */}
-      <View style={[styles.cardHeaderBar, isFocused ? styles.cardHeaderBarFocused : null]}>
-        <View style={styles.cardHeaderTitleBox}>
-          <Text
-            style={[styles.cardHeaderTitleText, isFocused ? styles.cardHeaderTitleTextFocused : null]}
-            numberOfLines={1}
-          >
-            {displayTitle}
-          </Text>
-        </View>
-
-        <View style={styles.headerBtnRow}>
-          {onOptions ? (
-            <TouchableOpacity
-              focusable={false}
-              onPress={onOptions}
-              style={styles.headerBtn}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.headerBtnText}>⚙</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          {onRemove ? (
-            <TouchableOpacity
-              focusable={false}
-              onPress={onRemove}
-              style={styles.headerBtn}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.headerBtnText}>✕</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Main Native Widget View Container */}
+      {/* 100% Pure Edge-to-Edge Native Widget Container */}
       <View style={styles.cardBody} pointerEvents="auto">
         <NativeAppWidgetView
           style={styles.widgetView}
@@ -425,7 +390,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
-    flexDirection: 'column',
     transform: [{ scale: 1.0 }],
   },
   /* OrionTV High-Contrast Focus Pop */
@@ -433,134 +397,79 @@ const styles = StyleSheet.create({
     borderColor: '#89b4fa',
     borderWidth: 3,
     backgroundColor: '#1e1e2e',
-    transform: [{ scale: 1.06 }],
+    transform: [{ scale: 1.05 }],
     shadowColor: '#89b4fa',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.7,
     shadowRadius: 14,
     elevation: 12,
   },
-  cardHeaderBar: {
-    height: 38,
-    backgroundColor: '#1e293b',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    zIndex: 20,
-  },
-  cardHeaderBarFocused: {
-    backgroundColor: '#0284c7',
-    borderBottomColor: '#89b4fa',
-    borderBottomWidth: 1.5,
-  },
-  cardHeaderTitleBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-    marginRight: 8,
-  },
-  cardHeaderTitleText: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  cardHeaderTitleTextFocused: {
-    color: '#ffffff',
-    fontWeight: '800',
-  },
-  headerBtnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerBtn: {
-    backgroundColor: '#334155',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#475569',
-  },
-  headerBtnText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    fontWeight: 'bold',
-    lineHeight: 14,
-  },
-
   cardBody: {
     flex: 1,
     width: '100%',
     height: '100%',
+    backgroundColor: '#0f172a',
+    overflow: 'hidden',
   },
   widgetView: {
-    flex: 1,
     width: '100%',
     height: '100%',
   },
-
-  /* ERROR & FALLBACK CARD STYLES */
   errorCard: {
-    backgroundColor: '#1e293b',
-    borderColor: '#334155',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: '#ef4444',
+    borderStyle: 'dashed',
+    borderWidth: 2,
+    backgroundColor: '#1e1b2e',
   },
   errorContent: {
-    padding: 16,
+    flex: 1,
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'center',
+    padding: 16,
   },
   errorIcon: {
     fontSize: 32,
     marginBottom: 8,
   },
   errorTitle: {
-    color: '#f8fafc',
+    color: '#f87171',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: 'bold',
     marginBottom: 4,
-    textAlign: 'center',
   },
   errorSubtitle: {
-    color: '#38bdf8',
+    color: '#cbd5e1',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 6,
     textAlign: 'center',
+    marginBottom: 4,
   },
   errorDetail: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
     marginBottom: 16,
     paddingHorizontal: 8,
   },
   errorActionRow: {
     flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'center',
+    gap: 8,
   },
   errorActionBtn: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    backgroundColor: '#334155',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#475569',
   },
   errorActionBtnDanger: {
-    backgroundColor: '#7f1d1d',
+    backgroundColor: '#991b1b',
+    borderColor: '#dc2626',
   },
   errorActionText: {
-    color: '#ffffff',
+    color: '#f1f5f9',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
