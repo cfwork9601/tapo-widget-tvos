@@ -7,14 +7,18 @@
 
 ## Resume Here
 
-**Current implementation phase:** **OrionTV & React Native TV Architectural Overhaul (`ORIONTV-ENHANCEMENT-01`)** documented & ready for Phase 1 execution.
+**Current implementation phase:** **Phase 1: State Architecture & Component Decomposition (`ORIONTV-PHASE-01`)** completed & verified.
 - **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
-- **Phased Implementation Roadmap**:
-  1. **Phase 1: State Architecture & Component Decomposition**: Zustand domain stores (`widgetStore`, `launcherStore`) and modular UI (`TopBar`, `WidgetGrid`, `WidgetActionModal`).
-  2. **Phase 2: D-Pad Focus & Spatial Navigation**: `TVFocusGuideView` grid integration, OrionTV high-contrast visual focus pop (`scale: 1.06`, `#89b4fa` glow, `elevation: 12`), and TV remote hotkeys (`useTVEventHandler`).
-  3. **Phase 3: TV Performance & 10-Foot UI Optimizations**: Safe overscan protection (6% screen margins) and component memoization for 2GB RAM Android TV hardware.
+- **Key Achievements in Phase 1**:
+  - **Zustand Domain Stores (`src/stores/`)**: Created `widgetStore.ts` and `launcherStore.ts` with complete state encapsulation (persistence, ID allocation, live channels sync, deep linking, camera name auto-sync).
+  - **Decoupled 10-Foot UI Components (`src/components/`)**: Created `TopBar.tsx` (digital clock, status summary, column picker), `WidgetGrid.tsx` (dynamic grid/slider layout), and `WidgetActionModal.tsx` (D-Pad options, device picker, click action).
+  - **Streamlined Screen Orchestrator (`src/screens/HomeScreen.tsx`)**: Refactored monolithic screen down from 1,123 lines to 65 lines.
+  - **TypeScript Verification**: `npx tsc --noEmit` completed with 0 errors.
 - **Next Immediate Tasks**:
-  1. Execute Phase 1: Install `zustand`, create domain stores, and decompose `HomeScreen.tsx`.
+  1. Execute **Phase 2: D-Pad Focus & Spatial Navigation Overhaul**:
+     - Integrate `TVFocusGuideView` across `TopBar` and `WidgetGrid`.
+     - Upgrade `WidgetCard.tsx` with OrionTV high-contrast focus pop (`scale: 1.06`, `#89b4fa` glow border, `elevation: 12`).
+     - Attach `useTVEventHandler` remote hotkey listeners (`Menu`, `Play/Pause`, column cycling).
 
 ---
 
@@ -87,6 +91,7 @@
 | 2026-08-15 | Fix Mount Auto-Trigger Bug | Pass | Verified on Onn 4K Pro (`192.168.1.67:5555`). Guarded `triggerClickToken` and `triggerConfigureToken` with `prevTokenRef` in `WidgetCard.tsx` and reset `triggerClickToken: 0` on storage load; dashboard opens cleanly without auto-triggering the first widget. |
 | 2026-08-15 | Standalone APK Build (`version_2.apk`) | Pass | `./gradlew :app:assembleRelease` completed in 4m 56s with 0 errors. Embedded full JavaScript bundle into release APK (66 MB) saved at `/home/thanhtuan/projects/tvlnc/version_2.apk`. |
 | 2026-08-15 | Agent Rule Package Generation | Pass | Verified all agent rules, 10-foot UI focus models, Expo config plugin rules, and development log template created in `/agent-rule`. |
+| 2026-08-18 | Phase 1: Zustand Store Decomposition | Pass | `npx tsc --noEmit` completed with 0 errors. Decoupled `HomeScreen.tsx` (1,123 lines -> 65 lines) into `widgetStore.ts`, `launcherStore.ts`, `TopBar.tsx`, `WidgetGrid.tsx`, and `WidgetActionModal.tsx`. |
 
 ## Important Decisions
 
