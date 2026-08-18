@@ -10,10 +10,9 @@
 **Current implementation phase:** **OrionTV & React Native TV Architectural Overhaul (`ORIONTV-ENHANCEMENT-01`)** documented & ready for Phase 1 execution.
 - **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
 - **Phased Implementation Roadmap**:
-  1. **Phase 1: State Architecture & Component Decomposition**: Zustand domain stores (`widgetStore`, `launcherStore`, `companionServerStore`) and modular UI (`TopBar`, `WidgetGrid`, `WidgetActionModal`, `CompanionServerModal`).
+  1. **Phase 1: State Architecture & Component Decomposition**: Zustand domain stores (`widgetStore`, `launcherStore`) and modular UI (`TopBar`, `WidgetGrid`, `WidgetActionModal`).
   2. **Phase 2: D-Pad Focus & Spatial Navigation**: `TVFocusGuideView` grid integration, OrionTV high-contrast visual focus pop (`scale: 1.06`, `#89b4fa` glow, `elevation: 12`), and TV remote hotkeys (`useTVEventHandler`).
-  3. **Phase 3: Embedded Companion Web Server**: Zero-dependency Kotlin HTTP server daemon on port 8080 (`CompanionServerModule.kt`), REST APIs for mobile widget reordering/camera switching, and on-screen SVG QR Code.
-  4. **Phase 4: TV Performance & 10-Foot UI Optimizations**: Safe overscan protection (6% screen margins) and component memoization for 2GB RAM Android TV hardware.
+  3. **Phase 3: TV Performance & 10-Foot UI Optimizations**: Safe overscan protection (6% screen margins) and component memoization for 2GB RAM Android TV hardware.
 - **Next Immediate Tasks**:
   1. Execute Phase 1: Install `zustand`, create domain stores, and decompose `HomeScreen.tsx`.
 
