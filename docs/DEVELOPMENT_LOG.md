@@ -7,17 +7,15 @@
 
 ## Resume Here
 
-**Current implementation phase:** **Tapo Camera Device Selection & Auto Name Synchronization (`TASK-WIDGET-SYNC-01`)** implemented & compiled.
-- **Active Architecture Specification**: [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
-- **Key Achievements**:
-  - **Camera Name Auto-Detection (`AppWidgetSnapshotCaptureHelper.kt` & `AppWidgetViewManager.kt`)**: Added `findDeviceName` to extract live camera titles from widget `TextView`s. Emits `onDeviceNameDetected` event back to React Native.
-  - **Real-Time Label Synchronization (`HomeScreen.tsx`)**: Updates `activeWidgets` labels dynamically when a new camera is selected, persisting the change and keeping TV preview channel names synced 1:1.
-  - **Touch Passthrough & Safe Configuration**: Restored `pointerEvents="auto"` and added native `configureToken` dispatching to avoid `SecurityException` while allowing seamless Tapo camera selection.
-  - **Unified Single-Focus Card (`WidgetCard.tsx`)**: Single D-Pad focus stop per card with `#38bdf8` cyan glow and scale transform.
+**Current implementation phase:** **OrionTV & React Native TV Architectural Overhaul (`ORIONTV-ENHANCEMENT-01`)** documented & ready for Phase 1 execution.
+- **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/CHANNEL_PROPOSAL_PLAN.md`](./CHANNEL_PROPOSAL_PLAN.md).
+- **Phased Implementation Roadmap**:
+  1. **Phase 1: State Architecture & Component Decomposition**: Zustand domain stores (`widgetStore`, `launcherStore`, `companionServerStore`) and modular UI (`TopBar`, `WidgetGrid`, `WidgetActionModal`, `CompanionServerModal`).
+  2. **Phase 2: D-Pad Focus & Spatial Navigation**: `TVFocusGuideView` grid integration, OrionTV high-contrast visual focus pop (`scale: 1.06`, `#89b4fa` glow, `elevation: 12`), and TV remote hotkeys (`useTVEventHandler`).
+  3. **Phase 3: Embedded Companion Web Server**: Zero-dependency Kotlin HTTP server daemon on port 8080 (`CompanionServerModule.kt`), REST APIs for mobile widget reordering/camera switching, and on-screen SVG QR Code.
+  4. **Phase 4: TV Performance & 10-Foot UI Optimizations**: Safe overscan protection (6% screen margins) and component memoization for 2GB RAM Android TV hardware.
 - **Next Immediate Tasks**:
-  1. Test adding/changing camera on live hardware to verify title auto-updates on card header and launcher channel.
-  2. Implement periodic background sync worker (`SnapshotSyncWorker`) using WorkManager for background snapshot refresh even when the app is in the background.
-  3. Implement WatchNext motion alert cards when Tapo cameras detect motion.
+  1. Execute Phase 1: Install `zustand`, create domain stores, and decompose `HomeScreen.tsx`.
 
 ---
 
@@ -114,6 +112,7 @@ At the end of every development session:
 
 ## Related Documents
 
+- [OrionTV Enhancement Plan](./ORIONTV_ENHANCEMENT_PLAN.md)
 - [TV D-Pad Navigation Plan](./TV_DPAD_NAVIGATION_PLAN.md)
 - [Branch Charter](./BRANCH_CHARTER.md)
 - [Application Inspection](./APP_INSPECTION.md)
