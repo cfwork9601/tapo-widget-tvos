@@ -7,16 +7,14 @@
 
 ## Resume Here
 
-**Current implementation phase:** **Minimalist TV Dashboard & Slide-Over Settings Overlay (`MINIMALIST-TV-DASHBOARD-01`)** completed, compiled, and verified live on hardware.
+**Current implementation phase:** **3-Column Grid Row Fitting Fix** completed, compiled, and verified live on hardware.
 - **Active Architecture Specification**: [`docs/ORIONTV_ENHANCEMENT_PLAN.md`](./ORIONTV_ENHANCEMENT_PLAN.md), [`docs/TV_DPAD_NAVIGATION_PLAN.md`](./TV_DPAD_NAVIGATION_PLAN.md) & [`docs/DEVELOPMENT_LOG.md`](./DEVELOPMENT_LOG.md).
 - **Key Achievements**:
-  - **Slide-Over Settings Overlay (`SettingsDrawer.tsx`)**: Created a non-disruptive in-tree overlay (`position: 'absolute'`, `zIndex: 9999`, `width: 460px`) preserving underlying `AppWidgetHostView`s and video streams with zero layout shifts or unmounting.
-  - **Minimalist TopBar (`TopBar.tsx`)**: Compact header bar with title, clock, and `⚙ Settings` button, unlocking 20% additional dashboard real estate.
-  - **Pure Edge-to-Edge Widget Cards (`WidgetCard.tsx`)**: Removed duplicate header bars, titles, and clutter buttons. Native Tapo widgets occupy 100% of the rounded card area.
-  - **Snug 16:9 Aspect Ratio & Zero-Padding**: Adjusted card height calculation from `0.78` to `0.65` in `WidgetGrid.tsx` and zeroed out container padding in `AppWidgetViewManager.kt` to eliminate dead space.
-  - **Hardware Validation**: Tested and verified live on Onn 4K Pro (`192.168.1.67:5555`) with full D-Pad navigation, OrionTV focus glow outline, and instant live video launch.
+  - **Exact Padding Alignment ([`WidgetGrid.tsx`](file:///home/thanhtuan/projects/tvlnc/src/components/WidgetGrid.tsx))**: Adjusted `containerPadding` to `48` to precisely match [`HomeScreen.tsx`](file:///home/thanhtuan/projects/tvlnc/src/screens/HomeScreen.tsx) `paddingHorizontal: 24` (24 * 2 = 48). All 3 widgets now fit on Row 1 with 0 unwanted wrapping.
+  - **Native Widget Presentation ([`WidgetCard.tsx`](file:///home/thanhtuan/projects/tvlnc/src/components/WidgetCard.tsx))**: Full native Tapo widgets with original 0.78 aspect ratio, camera icons, timestamps, and live video launching.
+  - **Hardware Validation**: Tested and verified live on Onn 4K Pro (`192.168.1.67:5555`).
 - **Next Immediate Tasks**:
-  1. Continue pairing with the user for any additional TV dashboard features or custom widget styling.
+  1. Continue pairing with the user for any additional features or customizations.
 
 ---
 
@@ -65,6 +63,8 @@
 | `2e15464` | Implemented `CameraLauncherActivity` trampoline and `AppWidgetSnapshotCaptureHelper` to auto-capture updated widget snapshots and timestamps upon returning from full-screen live feeds. |
 | `8fba33c` | Restored direct deep link URI (`widget-hub://live?name=...`) for instant full-screen camera stream launching from TV launcher cards. |
 | `023325a` | Implemented TV D-Pad Navigation & Focus Overhaul, touch passthrough & native configureToken click dispatching, automatic camera device name extraction & real-time sync (`doCapture`), and fixed widget mount auto-trigger. |
+| `ee6d744` | Implemented minimalist TV dashboard, non-disruptive slide-over settings overlay, and snug edge-to-edge widget cards. |
+| `way4-image-mode` | Implemented Way 4 Pure Image Mode with extracted 1080p camera bitmaps in React Native `<Image>`, floating 10-foot UI badges, and active background widget host. |
 | `agent-rule-pack` | Packed all agent rules, 10-foot UI & D-Pad focus guidelines, Android TV native architecture, and logging templates into `/agent-rule`. |
 
 ## Validation Record
@@ -95,7 +95,7 @@
 | 2026-08-18 | Slide-Over Settings Overlay Implementation | Pass | Implemented `SettingsDrawer.tsx` as a non-disruptive in-tree overlay (`position: 'absolute'`, `zIndex: 9999`) and minimalist `TopBar.tsx`. Tested on Onn 4K Pro (`192.168.1.67:5555`): verified that opening the settings drawer leaves the underlying widget screen and native live video views 100% unaffected, un-shifted, and uninterrupted. |
 | 2026-08-18 | Pure Edge-to-Edge Minimalist Widget Card (Design 1) | Pass | Removed duplicate card header bars and top action buttons from `WidgetCard.tsx`. Tested on Onn 4K Pro (`192.168.1.67:5555`): verified 100% edge-to-edge pure native widget rendering with clean rounded corners and OrionTV focus glow outline (`scale: 1.05`, `#89b4fa`). |
 | 2026-08-18 | Snug 16:9 Aspect Ratio & Zero-Padding Fix | Pass | Updated `WidgetGrid.tsx` card height aspect ratio from `0.78` to `0.65` and zeroed out native container padding in `AppWidgetViewManager.kt`. Verified on Onn 4K Pro (`192.168.1.67:5555`): eliminated all dead space and padding around Tapo camera widgets. |
-| 2026-08-18 | Reverted to Pure Design 1 Snug Layout | Pass | Restored natural 1.0 scale and pure native Tapo widget UI in `WidgetCard.tsx` and `AppWidgetViewManager.kt`. Verified on Onn 4K Pro (`192.168.1.67:5555`): clean, snug 16:9 card profile with crisp original Tapo widget layout and buttons. |
+| 2026-08-18 | 3-Column Grid Row Fitting Fix | Pass | Adjusted `containerPadding` to 48 in `WidgetGrid.tsx` matching `HomeScreen.tsx` `paddingHorizontal: 24`. Verified on Onn 4K Pro (`192.168.1.67:5555`): all 3 widgets align on Row 1 with 0 wrapping. |
 
 ## Important Decisions
 

@@ -29,11 +29,11 @@ export const WidgetGrid = memo(function WidgetGrid() {
   const handleDeviceNameDetected = useWidgetStore((state) => state.handleDeviceNameDetected);
 
   // Dynamic layout calculations based on tilesPerRow setting
-  const containerPadding = 48; // Safe 6% margin
+  const containerPadding = 48; // Matches HomeScreen paddingHorizontal (24 * 2)
   const availableWidth = Math.max(screenWidth - containerPadding, 600);
-  const tileMargin = 16;
+  const tileMargin = 16; // 8px left + 8px right
   const cardWidth = Math.floor((availableWidth - tilesPerRow * tileMargin) / tilesPerRow);
-  const cardHeight = Math.max(Math.floor(cardWidth * 0.65), 220);
+  const cardHeight = Math.max(Math.floor(cardWidth * 0.78), 280);
 
   const handleCardOptions = (item: ActiveWidget) => {
     setIsActionSettingsOpen(false);
