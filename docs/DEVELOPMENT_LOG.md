@@ -64,7 +64,7 @@
 | `8fba33c` | Restored direct deep link URI (`widget-hub://live?name=...`) for instant full-screen camera stream launching from TV launcher cards. |
 | `023325a` | Implemented TV D-Pad Navigation & Focus Overhaul, touch passthrough & native configureToken click dispatching, automatic camera device name extraction & real-time sync (`doCapture`), and fixed widget mount auto-trigger. |
 | `ee6d744` | Implemented minimalist TV dashboard, non-disruptive slide-over settings overlay, and snug edge-to-edge widget cards. |
-| `way4-image-mode` | Implemented Way 4 Pure Image Mode with extracted 1080p camera bitmaps in React Native `<Image>`, floating 10-foot UI badges, and active background widget host. |
+| `40fbe98` | Harmonized 3-column layout padding and aligned card sizing with main branch. |
 | `agent-rule-pack` | Packed all agent rules, 10-foot UI & D-Pad focus guidelines, Android TV native architecture, and logging templates into `/agent-rule`. |
 
 ## Validation Record
